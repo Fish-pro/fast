@@ -22,9 +22,9 @@ import (
 	v1alpha1 "github.com/fast-io/fast/pkg/generated/informers/externalversions/ips/v1alpha1"
 )
 
-// Interface provides access to each of this group's versions.
+// Interface provides ips to each of this group's versions.
 type Interface interface {
-	// V1alpha1 provides access to shared informers for resources in V1alpha1.
+	// V1alpha1 provides ips to shared informers for resources in V1alpha1.
 	V1alpha1() v1alpha1.Interface
 }
 

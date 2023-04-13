@@ -47,7 +47,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 	return cache.NewGenericLister(f.Informer().GetIndexer(), f.resource)
 }
 
-// ForResource gives generic access to a shared informer of the matching type
+// ForResource gives generic ips to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {

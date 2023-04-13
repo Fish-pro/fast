@@ -235,7 +235,7 @@ type SharedInformerFactory interface {
 	// or the stop channel gets closed.
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	// ForResource gives generic access to a shared informer of the matching type.
+	// ForResource gives generic ips to a shared informer of the matching type.
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal

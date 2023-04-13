@@ -21,7 +21,7 @@ import (
 	internalinterfaces "github.com/fast-io/fast/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
-// Interface provides access to all the informers in this group version.
+// Interface provides ips to all the informers in this group version.
 type Interface interface {
 	// Ipses returns a IpsInformer.
 	Ipses() IpsInformer

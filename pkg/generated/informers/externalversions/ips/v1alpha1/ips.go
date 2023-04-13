@@ -31,7 +31,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// IpsInformer provides access to a shared informer and lister for
+// IpsInformer provides ips to a shared informer and lister for
 // Ipses.
 type IpsInformer interface {
 	Informer() cache.SharedIndexInformer
