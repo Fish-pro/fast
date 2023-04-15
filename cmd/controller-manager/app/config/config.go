@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	fastctrlmgrconfig "github.com/fast-io/fast/pkg/controllers/apis/config"
-	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 )
 
 // Config define global options and sub controller configuration
@@ -39,8 +38,6 @@ type Config struct {
 
 	// the general kube client
 	Client *clientset.Clientset
-
-	IClient ipsversioned.Interface
 
 	// the rest config for the master
 	Kubeconfig *restclient.Config

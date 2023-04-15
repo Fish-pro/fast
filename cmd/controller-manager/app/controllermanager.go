@@ -78,7 +78,7 @@ const (
 
 // NewControllerManagerCommand returns the agent root command
 func NewControllerManagerCommand() *cobra.Command {
-	o := options.NewAgentOptions()
+	o := options.NewControllerManagerOptions()
 
 	cmd := &cobra.Command{
 		Use:  "fast-controller-manger",
@@ -111,7 +111,7 @@ func NewControllerManagerCommand() *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-	namedFlagSets := o.Flags()
+	namedFlagSets := o.Flags(KnownControllers(), ControllersDisabledByDefault.List())
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), cmd.Name())
 	for _, f := range namedFlagSets.FlagSets {
