@@ -17,3 +17,23 @@ Components:
 + fast-controller-manager
   + custom resources control
   + gc management to prevent IP leakage
+
+## Quick Start
+
+//TODO
+
+## What's Next
+
+More will be coming Soon. Welcome to [open an issue](https://github.com/Fish-pro/fast/issues) and [propose a PR](https://github.com/Fish-pro/fast/pulls). 🎉🎉🎉
+
+## Contributors
+
+<a href="https://github.com/Fish-pro/fast/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Fish-pro/fast" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
+
+## License
+
+Fast is under the Apache 2.0 license. See the [LICENSE](LICENSE) file for details.
