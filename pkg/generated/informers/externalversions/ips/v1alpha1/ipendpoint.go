@@ -31,58 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// IpsInformer provides access to a shared informer and lister for
-// Ipses.
-type IpsInformer interface {
+// IpEndpointInformer provides access to a shared informer and lister for
+// IpEndpoints.
+type IpEndpointInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.IpsLister
+	Lister() v1alpha1.IpEndpointLister
 }
 
-type ipsInformer struct {
+type ipEndpointInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
-// NewIpsInformer constructs a new informer for Ips type.
+// NewIpEndpointInformer constructs a new informer for IpEndpoint type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewIpsInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredIpsInformer(client, resyncPeriod, indexers, nil)
+func NewIpEndpointInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredIpEndpointInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredIpsInformer constructs a new informer for Ips type.
+// NewFilteredIpEndpointInformer constructs a new informer for IpEndpoint type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredIpsInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredIpEndpointInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SampleV1alpha1().Ipses().List(context.TODO(), options)
+				return client.SampleV1alpha1().IpEndpoints(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SampleV1alpha1().Ipses().Watch(context.TODO(), options)
+				return client.SampleV1alpha1().IpEndpoints(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&ipsv1alpha1.Ips{},
+		&ipsv1alpha1.IpEndpoint{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *ipsInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredIpsInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *ipEndpointInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredIpEndpointInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *ipsInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&ipsv1alpha1.Ips{}, f.defaultInformer)
+func (f *ipEndpointInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&ipsv1alpha1.IpEndpoint{}, f.defaultInformer)
 }
 
-func (f *ipsInformer) Lister() v1alpha1.IpsLister {
-	return v1alpha1.NewIpsLister(f.Informer().GetIndexer())
+func (f *ipEndpointInformer) Lister() v1alpha1.IpEndpointLister {
+	return v1alpha1.NewIpEndpointLister(f.Informer().GetIndexer())
 }

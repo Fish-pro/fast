@@ -17,6 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
+// IpEndpointListerExpansion allows custom methods to be added to
+// IpEndpointLister.
+type IpEndpointListerExpansion interface{}
+
+// IpEndpointNamespaceListerExpansion allows custom methods to be added to
+// IpEndpointNamespaceLister.
+type IpEndpointNamespaceListerExpansion interface{}
+
 // IpsListerExpansion allows custom methods to be added to
 // IpsLister.
 type IpsListerExpansion interface{}

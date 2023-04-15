@@ -21,8 +21,10 @@ import (
 	internalinterfaces "github.com/fast-io/fast/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
-// Interface provides ips to all the informers in this group version.
+// Interface provides access to all the informers in this group version.
 type Interface interface {
+	// IpEndpoints returns a IpEndpointInformer.
+	IpEndpoints() IpEndpointInformer
 	// Ipses returns a IpsInformer.
 	Ipses() IpsInformer
 }
@@ -36,6 +38,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// IpEndpoints returns a IpEndpointInformer.
+func (v *version) IpEndpoints() IpEndpointInformer {
+	return &ipEndpointInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Ipses returns a IpsInformer.

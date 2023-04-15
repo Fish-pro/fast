@@ -27,12 +27,17 @@ import (
 
 type SampleV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	IpEndpointsGetter
 	IpsesGetter
 }
 
 // SampleV1alpha1Client is used to interact with features provided by the sample.fast.io group.
 type SampleV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *SampleV1alpha1Client) IpEndpoints(namespace string) IpEndpointInterface {
+	return newIpEndpoints(c, namespace)
 }
 
 func (c *SampleV1alpha1Client) Ipses() IpsInterface {
