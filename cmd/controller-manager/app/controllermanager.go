@@ -287,9 +287,6 @@ type ControllerContext struct {
 	// ClientBuilder will provide a client for this controller to use
 	ClientBuilder builder.IpsControllerClientBuilder
 
-	// RootClientBuilder will provide a kube client
-	RootClientBuilder clientbuilder.ControllerClientBuilder
-
 	// InformerFactory gives access to informers for the controller.
 	InformerFactory informers.SharedInformerFactory
 
@@ -381,7 +378,7 @@ func GetAvailableResources(clientBuilder clientbuilder.ControllerClientBuilder) 
 // CreateControllerContext creates a context struct containing references to resources needed by the
 // controllers such as the cloud provider and clientBuilder. rootClientBuilder is only used for
 // the shared-informers client and token controller.
-func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, rootClientBuilder clientbuilder.SimpleControllerClientBuilder, clientBuilder builder.IpsControllerClientBuilder, stop <-chan struct{}) (ControllerContext, error) {
+func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, rootClientBuilder, clientBuilder builder.IpsControllerClientBuilder, stop <-chan struct{}) (ControllerContext, error) {
 	versionedClient := rootClientBuilder.ClientOrDie("shared-informers")
 	sharedInformers := informers.NewSharedInformerFactory(versionedClient, ResyncPeriod(s)())
 
@@ -406,7 +403,6 @@ func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, root
 
 	ctx := ControllerContext{
 		ClientBuilder:            clientBuilder,
-		RootClientBuilder:        rootClientBuilder,
 		InformerFactory:          sharedInformers,
 		ComponentConfig:          s.ComponentConfig,
 		RESTMapper:               restMapper,
@@ -481,11 +477,9 @@ func StartControllers(ctx context.Context, controllerCtx ControllerContext, cont
 }
 
 // createClientBuilders creates clientBuilder and rootClientBuilder from the given configuration
-func createClientBuilders(logger klog.Logger, c *config.CompletedConfig) (clientBuilder builder.IpsControllerClientBuilder, rootClientBuilder clientbuilder.SimpleControllerClientBuilder) {
-	rootClientBuilder = clientbuilder.SimpleControllerClientBuilder{
-		ClientConfig: c.Kubeconfig,
-	}
-	clientBuilder = builder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
+func createClientBuilders(logger klog.Logger, c *config.CompletedConfig) (clientBuilder, rootClientBuilder builder.IpsControllerClientBuilder) {
+	rootClientBuilder = builder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
+	clientBuilder = rootClientBuilder
 	return
 }
 
@@ -536,8 +530,8 @@ func createInitializersFunc(filterFunc leadermigration.FilterFunc, expected lead
 func startIpsController(ctx context.Context, controllerContext ControllerContext) (controller.Interface, bool, error) {
 	ctrl, err := ipsctrl.NewController(
 		ctx,
-		controllerContext.RootClientBuilder.ClientOrDie("ips-controller"),
-		controllerContext.ClientBuilder.IpsClientOrDie("ips-controller"),
+		controllerContext.ClientBuilder.ClientOrDie("fast-controller-manager"),
+		controllerContext.ClientBuilder.IpsClientOrDie("fast-controller-manager"),
 		controllerContext.IpsInformerFactory.Sample().V1alpha1().Ipses(),
 	)
 	if err != nil {
@@ -550,8 +544,8 @@ func startIpsController(ctx context.Context, controllerContext ControllerContext
 func startGcManagerController(ctx context.Context, controllerContext ControllerContext) (controller.Interface, bool, error) {
 	ctrl, err := gcctrl.NewController(
 		ctx,
-		controllerContext.RootClientBuilder.ClientOrDie("ips-controller"),
-		controllerContext.ClientBuilder.IpsClientOrDie("ips-controller"),
+		controllerContext.ClientBuilder.ClientOrDie("fast-controller-manager"),
+		controllerContext.ClientBuilder.IpsClientOrDie("fast-controller-manager"),
 		controllerContext.InformerFactory.Core().V1().Pods(),
 		controllerContext.IpsInformerFactory.Sample().V1alpha1().Ipses(),
 	)
