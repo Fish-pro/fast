@@ -35,8 +35,8 @@ const (
 	// ips is going to be requeued:
 	//
 	// 5ms, 10ms, 20ms, 40ms, 80ms, 160ms, 320ms, 640ms, 1.3s, 2.6s, 5.1s, 10.2s, 20.4s, 41s, 82s
-	maxRetries          = 15
-	ControllerAgentName = "ips-controller"
+	maxRetries     = 15
+	ControllerName = "ips-controller"
 )
 
 var defaultValue = uint32(1)
@@ -61,6 +61,10 @@ type Controller struct {
 	eventRecorder    record.EventRecorder
 }
 
+func (c *Controller) Name() string {
+	return ControllerName
+}
+
 // NewController return a controller and add event handler
 func NewController(
 	ctx context.Context,
@@ -83,8 +87,8 @@ func NewController(
 		ipsSynced:        informer.Informer().HasSynced,
 		nodeName:         types.NodeName(strings.ToLower(hostname)),
 		eventBroadcaster: eventBroadcaster,
-		eventRecorder:    eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: ControllerAgentName}),
-		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), ControllerAgentName),
+		eventRecorder:    eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: ControllerName}),
+		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), ControllerName),
 	}
 
 	logger.Info("Setting up event handlers")
@@ -120,8 +124,8 @@ func (c *Controller) Run(ctx context.Context) {
 
 	logger := klog.FromContext(ctx)
 	// Start the informer factories to begin populating the informer caches
-	logger.Info("Starting controller", "controller", ControllerAgentName)
-	defer logger.Info("Shutting down controller", "controller", ControllerAgentName)
+	logger.Info("Starting controller", "controller", ControllerName)
+	defer logger.Info("Shutting down controller", "controller", ControllerName)
 
 	// Wait for the caches to be synced before starting worker
 	logger.Info("Waiting for informer caches to sync")

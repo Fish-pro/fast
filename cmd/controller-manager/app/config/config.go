@@ -17,15 +17,26 @@ limitations under the License.
 package config
 
 import (
+	apiserver "k8s.io/apiserver/pkg/server"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 
+	fastctrlmgrconfig "github.com/fast-io/fast/pkg/controllers/apis/config"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 )
 
 // Config define global options and sub controller configuration
 type Config struct {
+	ComponentConfig fastctrlmgrconfig.FastControllerManagerConfiguration
+
+	SecureServing *apiserver.SecureServingInfo
+	// LoopbackClientConfig is a config for a privileged loopback connection
+	LoopbackClientConfig *restclient.Config
+
+	Authentication apiserver.AuthenticationInfo
+	Authorization  apiserver.AuthorizationInfo
+
 	// the general kube client
 	Client *clientset.Clientset
 
