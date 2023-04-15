@@ -1,4 +1,4 @@
-# fast
+# Fast
 
 Fast is a Kubernetes CNI based on eBPF implementation
 
