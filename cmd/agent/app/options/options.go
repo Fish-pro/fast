@@ -29,7 +29,6 @@ import (
 	"k8s.io/component-base/metrics"
 
 	"github.com/fast-io/fast/cmd/agent/app/config"
-	"github.com/fast-io/fast/pkg/builder"
 )
 
 const (
@@ -64,13 +63,11 @@ func (o *AgentOptions) Config() (*config.Config, error) {
 		return nil, err
 	}
 
-	clientBuilder := builder.NewSimpleIpsControllerClientBuilder(kubeconfig)
 	eventBroadcaster := record.NewBroadcaster()
 	eventRecorder := eventBroadcaster.NewRecorder(clientgokubescheme.Scheme, v1.EventSource{Component: ControllerUserAgent})
 
 	c := &config.Config{
 		Client:           client,
-		IClient:          clientBuilder.IpsClientOrDie(ControllerUserAgent),
 		Kubeconfig:       kubeconfig,
 		EventBroadcaster: eventBroadcaster,
 		EventRecorder:    eventRecorder,

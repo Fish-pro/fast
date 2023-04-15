@@ -1,19 +1,3 @@
-/*
-Copyright 2023 The ips Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package app
 
 import (
@@ -60,6 +44,7 @@ import (
 	"github.com/fast-io/fast/cmd/controller-manager/app/options"
 	"github.com/fast-io/fast/pkg/builder"
 	fastctrlmgrconfig "github.com/fast-io/fast/pkg/controllers/apis/config"
+	gcctrl "github.com/fast-io/fast/pkg/controllers/gc"
 	ipsctrl "github.com/fast-io/fast/pkg/controllers/ips"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
 )
@@ -78,7 +63,11 @@ const (
 
 // NewControllerManagerCommand returns the agent root command
 func NewControllerManagerCommand() *cobra.Command {
-	o := options.NewControllerManagerOptions()
+	o, err := options.NewControllerManagerOptions()
+	if err != nil {
+		klog.Background().Error(err, "Unable to initialize command options")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
 
 	cmd := &cobra.Command{
 		Use:  "fast-controller-manger",
@@ -288,6 +277,7 @@ func NewControllerInitializers() map[string]InitFunc {
 	}
 
 	register("ips-controller", startIpsController)
+	register("gc-manager", startGcManagerController)
 
 	return controllers
 }
@@ -548,6 +538,21 @@ func startIpsController(ctx context.Context, controllerContext ControllerContext
 		ctx,
 		controllerContext.RootClientBuilder.ClientOrDie("ips-controller"),
 		controllerContext.ClientBuilder.IpsClientOrDie("ips-controller"),
+		controllerContext.IpsInformerFactory.Sample().V1alpha1().Ipses(),
+	)
+	if err != nil {
+		return nil, false, err
+	}
+	go ctrl.Run(ctx)
+	return ctrl, true, nil
+}
+
+func startGcManagerController(ctx context.Context, controllerContext ControllerContext) (controller.Interface, bool, error) {
+	ctrl, err := gcctrl.NewController(
+		ctx,
+		controllerContext.RootClientBuilder.ClientOrDie("ips-controller"),
+		controllerContext.ClientBuilder.IpsClientOrDie("ips-controller"),
+		controllerContext.InformerFactory.Core().V1().Pods(),
 		controllerContext.IpsInformerFactory.Sample().V1alpha1().Ipses(),
 	)
 	if err != nil {

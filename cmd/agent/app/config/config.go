@@ -20,16 +20,12 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-
-	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 )
 
 // Config define global options and sub controller configuration
 type Config struct {
 	// the general kube client
 	Client *clientset.Clientset
-
-	IClient ipsversioned.Interface
 
 	// the rest config for the master
 	Kubeconfig *restclient.Config

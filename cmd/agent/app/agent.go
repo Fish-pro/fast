@@ -19,6 +19,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/fast-io/fast/pkg/builder"
 	"os"
 	"time"
 
@@ -38,6 +39,7 @@ import (
 
 	"github.com/fast-io/fast/cmd/agent/app/config"
 	"github.com/fast-io/fast/cmd/agent/app/options"
+	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
 )
 
@@ -109,10 +111,31 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	c.EventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: c.Client.CoreV1().Events("")})
 	defer c.EventBroadcaster.Shutdown()
 
+	clientBuilder := builder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
+	ipsManager := clientBuilder.IpsClientOrDie("ips-manager")
+
+	// 1.create map and attach eBPF programs
+
 	// new normal informer factory
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c.Client, time.Second*30)
+
+	// 2.Obtain the cluster pod IP and store the information to the cluster eBPF map
+	// TODO: need input eBPF engine
+	controller, err := clusterpodctrl.NewController(
+		ctx,
+		c.Client,
+		kubeInformerFactory.Core().V1().Pods(),
+		kubeInformerFactory.Core().V1().Nodes(),
+	)
+	if err != nil {
+		return err
+	}
+	go controller.Run(ctx)
+
 	// new ips informer factory
-	ipsInformerFactory := ipsinformers.NewSharedInformerFactory(c.IClient, time.Second*30)
+	ipsInformerFactory := ipsinformers.NewSharedInformerFactory(ipsManager, time.Second*30)
+
+	// 3.start unix server
 
 	kubeInformerFactory.Start(stopCh)
 	ipsInformerFactory.Start(stopCh)

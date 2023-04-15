@@ -3,15 +3,12 @@ package ips
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -46,8 +43,6 @@ type Controller struct {
 	kubeClient kubernetes.Interface
 	client     ipsversioned.Interface
 
-	nodeName types.NodeName
-
 	// lister define the cache object
 	lister ipslisters.IpsLister
 
@@ -73,11 +68,6 @@ func NewController(
 	informer ipsinformers.IpsInformer) (*Controller, error) {
 	logger := klog.FromContext(ctx)
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-
 	logger.V(4).Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	controller := &Controller{
@@ -85,14 +75,15 @@ func NewController(
 		kubeClient:       kubeClient,
 		lister:           informer.Lister(),
 		ipsSynced:        informer.Informer().HasSynced,
-		nodeName:         types.NodeName(strings.ToLower(hostname)),
 		eventBroadcaster: eventBroadcaster,
 		eventRecorder:    eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: ControllerName}),
-		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), ControllerName),
+		queue: workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
+			Name: ControllerName,
+		}),
 	}
 
 	logger.Info("Setting up event handlers")
-	_, err = informer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
+	_, err := informer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			controller.enqueue(logger, obj)
 		},
