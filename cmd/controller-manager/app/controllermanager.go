@@ -35,14 +35,13 @@ import (
 	"k8s.io/component-base/version/verflag"
 	genericcontrollermanager "k8s.io/controller-manager/app"
 	"k8s.io/controller-manager/controller"
-	"k8s.io/controller-manager/pkg/clientbuilder"
 	controllerhealthz "k8s.io/controller-manager/pkg/healthz"
 	"k8s.io/controller-manager/pkg/leadermigration"
 	"k8s.io/klog/v2"
 
 	"github.com/fast-io/fast/cmd/controller-manager/app/config"
 	"github.com/fast-io/fast/cmd/controller-manager/app/options"
-	"github.com/fast-io/fast/pkg/builder"
+	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	fastctrlmgrconfig "github.com/fast-io/fast/pkg/controllers/apis/config"
 	gcctrl "github.com/fast-io/fast/pkg/controllers/gc"
 	ipsctrl "github.com/fast-io/fast/pkg/controllers/ips"
@@ -285,7 +284,7 @@ func NewControllerInitializers() map[string]InitFunc {
 // ControllerContext defines the context object for controller
 type ControllerContext struct {
 	// ClientBuilder will provide a client for this controller to use
-	ClientBuilder builder.IpsControllerClientBuilder
+	ClientBuilder clientbuilder.IpsControllerClientBuilder
 
 	// InformerFactory gives access to informers for the controller.
 	InformerFactory informers.SharedInformerFactory
@@ -350,7 +349,7 @@ var ControllersDisabledByDefault = sets.NewString()
 // TODO: In general, any controller checking this needs to be dynamic so
 // users don't have to restart their controller manager if they change the apiserver.
 // Until we get there, the structure here needs to be exposed for the construction of a proper ControllerContext.
-func GetAvailableResources(clientBuilder clientbuilder.ControllerClientBuilder) (map[schema.GroupVersionResource]bool, error) {
+func GetAvailableResources(clientBuilder clientbuilder.IpsControllerClientBuilder) (map[schema.GroupVersionResource]bool, error) {
 	client := clientBuilder.ClientOrDie("controller-discovery")
 	discoveryClient := client.Discovery()
 	_, resourceMap, err := discoveryClient.ServerGroupsAndResources()
@@ -378,7 +377,7 @@ func GetAvailableResources(clientBuilder clientbuilder.ControllerClientBuilder) 
 // CreateControllerContext creates a context struct containing references to resources needed by the
 // controllers such as the cloud provider and clientBuilder. rootClientBuilder is only used for
 // the shared-informers client and token controller.
-func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, rootClientBuilder, clientBuilder builder.IpsControllerClientBuilder, stop <-chan struct{}) (ControllerContext, error) {
+func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, rootClientBuilder, clientBuilder clientbuilder.IpsControllerClientBuilder, stop <-chan struct{}) (ControllerContext, error) {
 	versionedClient := rootClientBuilder.ClientOrDie("shared-informers")
 	sharedInformers := informers.NewSharedInformerFactory(versionedClient, ResyncPeriod(s)())
 
@@ -477,8 +476,8 @@ func StartControllers(ctx context.Context, controllerCtx ControllerContext, cont
 }
 
 // createClientBuilders creates clientBuilder and rootClientBuilder from the given configuration
-func createClientBuilders(logger klog.Logger, c *config.CompletedConfig) (clientBuilder, rootClientBuilder builder.IpsControllerClientBuilder) {
-	rootClientBuilder = builder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
+func createClientBuilders(logger klog.Logger, c *config.CompletedConfig) (clientBuilder, rootClientBuilder clientbuilder.IpsControllerClientBuilder) {
+	rootClientBuilder = clientbuilder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
 	clientBuilder = rootClientBuilder
 	return
 }

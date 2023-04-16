@@ -19,7 +19,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/fast-io/fast/pkg/builder"
 	"os"
 	"time"
 
@@ -37,8 +36,10 @@ import (
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
 
+	bpfmap "github.com/fast-io/fast/bpf/map"
 	"github.com/fast-io/fast/cmd/agent/app/config"
 	"github.com/fast-io/fast/cmd/agent/app/options"
+	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
 )
@@ -111,10 +112,13 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	c.EventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: c.Client.CoreV1().Events("")})
 	defer c.EventBroadcaster.Shutdown()
 
-	clientBuilder := builder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
+	clientBuilder := clientbuilder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
 	ipsManager := clientBuilder.IpsClientOrDie("ips-manager")
 
 	// 1.create map and attach eBPF programs
+	if err := bpfmap.InitLoadPinnedMap(); err != nil {
+		return err
+	}
 
 	// new normal informer factory
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c.Client, time.Second*30)

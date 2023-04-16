@@ -3,6 +3,7 @@ module github.com/fast-io/fast
 go 1.20
 
 require (
+	github.com/cilium/ebpf v0.7.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.2.0
 	github.com/spf13/cobra v1.6.0
