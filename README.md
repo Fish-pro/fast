@@ -1,6 +1,6 @@
 # Fast
 
-Fast is a Kubernetes CNI based on eBPF implementation
+Fast is a Kubernetes CNI based on  [eBPF](https://ebpf.io)  implementation
 
 ## Architecture
 
