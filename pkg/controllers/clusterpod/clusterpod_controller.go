@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cilium/ebpf"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
+
+	bpfmap "github.com/fast-io/fast/bpf/map"
+	"github.com/fast-io/fast/pkg/util"
 )
 
 const (
@@ -42,12 +46,10 @@ type Controller struct {
 	nodeName   types.NodeName
 
 	// lister define the cache object
-	podLister  corelisters.PodLister
-	nodeLister corelisters.NodeLister
+	podLister corelisters.PodLister
 
 	// synced define the sync for relist
-	podSynced  cache.InformerSynced
-	nodeSynced cache.InformerSynced
+	podSynced cache.InformerSynced
 
 	// Access that need to be synced
 	queue workqueue.RateLimitingInterface
@@ -60,8 +62,7 @@ type Controller struct {
 func NewController(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	podInformer coreinformers.PodInformer,
-	nodeInformer coreinformers.NodeInformer) (*Controller, error) {
+	podInformer coreinformers.PodInformer) (*Controller, error) {
 	logger := klog.FromContext(ctx)
 
 	hostname, err := os.Hostname()
@@ -74,8 +75,6 @@ func NewController(
 	controller := &Controller{
 		kubeClient:       kubeClient,
 		podLister:        podInformer.Lister(),
-		nodeLister:       nodeInformer.Lister(),
-		nodeSynced:       nodeInformer.Informer().HasSynced,
 		podSynced:        podInformer.Informer().HasSynced,
 		nodeName:         types.NodeName(strings.ToLower(hostname)),
 		eventBroadcaster: eventBroadcaster,
@@ -121,7 +120,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 	// Wait for the caches to be synced before starting worker
 	logger.Info("Waiting for informer caches to sync")
-	if !cache.WaitForCacheSync(ctx.Done(), c.podSynced, c.nodeSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.podSynced) {
 		logger.Error(fmt.Errorf("failed to sync informer"), "Informer caches to sync bad")
 		return
 	}
@@ -177,19 +176,35 @@ func (c *Controller) handleErr(ctx context.Context, err error, key interface{}) 
 func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	logger := klog.FromContext(ctx)
 
-	_, name, err := cache.SplitMetaNamespaceKey(key)
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		logger.Error(err, "Failed to split meta namespace cache key", "cacheKey", key)
 		return err
 	}
 
 	startTime := time.Now()
-	logger.V(4).Info("Started syncing pod", "pod", name, "startTime", startTime)
+	logger.V(4).Info("Started syncing cluster pod", "pod", name, "startTime", startTime)
 	defer func() {
-		logger.V(4).Info("Finished syncing pod", "pod", name, "duration", time.Since(startTime))
+		logger.V(4).Info("Finished syncing cluster pod", "pod", name, "duration", time.Since(startTime))
 	}()
 
-	return nil
+	pod, err := c.podLister.Pods(ns).Get(name)
+	if err != nil {
+		logger.Error(err, "failed to get pod")
+		return err
+	}
+	if len(pod.Status.PodIP) == 0 {
+		return nil
+	}
+	podIp := util.InetIpToUInt32(pod.Status.PodIP)
+	nodeIP := util.InetIpToUInt32(pod.Status.HostIP)
+	clusterIpsMap := bpfmap.GetClusterPodIpsMap()
+
+	if !pod.DeletionTimestamp.IsZero() {
+		return clusterIpsMap.Delete(bpfmap.ClusterIpsMapKey{IP: podIp})
+	}
+
+	return clusterIpsMap.Update(bpfmap.ClusterIpsMapKey{IP: podIp}, bpfmap.ClusterIpsMapInfo{IP: nodeIP}, ebpf.UpdateAny)
 }
 
 // If nodeName is used, it is not queued if there is no match

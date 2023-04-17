@@ -129,7 +129,6 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 		ctx,
 		c.Client,
 		kubeInformerFactory.Core().V1().Pods(),
-		kubeInformerFactory.Core().V1().Nodes(),
 	)
 	if err != nil {
 		return err
