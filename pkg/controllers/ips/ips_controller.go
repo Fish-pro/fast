@@ -3,6 +3,7 @@ package ips
 import (
 	"context"
 	"fmt"
+	"github.com/fast-io/fast/pkg/util"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -196,9 +197,21 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		logger.Error(err, "Failed to get ips", "ips", name)
 		return err
 	}
-	_ = obj.DeepCopy()
+	ips := obj.DeepCopy()
 
-	return nil
+	if !ips.DeletionTimestamp.IsZero() {
+		return nil
+	}
+
+	count := int64(0)
+	for _, ip := range ips.Spec.IPs {
+		count += int64(len(util.ParseIPRange(ip)))
+	}
+
+	currentStatus := ipsv1alpha1.IpsStatus{}
+	currentStatus.TotalIPCount = &count
+
+	return c.updateIpsStatusIfNeed(ctx, ips, currentStatus)
 }
 
 // updateIpsStatusIfNeed update status if we need
