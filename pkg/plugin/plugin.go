@@ -1,7 +1,11 @@
 package plugin
 
 import (
+	"context"
+	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
+	"google.golang.org/grpc"
 	"runtime"
+	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -34,6 +38,32 @@ func cmdAdd(args *skel.CmdArgs) error {
 		"Args: ", args.Args,
 		"Path: ", args.Path,
 		"StdinData: ", string(args.StdinData))
+	conn, err := grpc.Dial(":8099")
+	if err != nil {
+		util.WriteLog("failed to connect server", "error", err.Error())
+	}
+	defer conn.Close()
+
+	client := ipamapiv1.NewIpServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	hresp, err := client.Health(ctx, &ipamapiv1.HealthRequest{})
+	if err != nil {
+		return err
+	}
+	if hresp.Msg != "ok" {
+		return err
+	}
+
+	_, err = client.Release(ctx, &ipamapiv1.IPAMRequest{
+		Command: "Add",
+		Id:      args.ContainerID,
+		IfName:  args.IfName,
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
