@@ -1,0 +1,32 @@
+syntax = "proto3";
+package v1;
+option go_package = ".;proto_v1";
+import "google/api/annotations.proto";
+
+message IPAMRequest{
+  string command=1;
+  string id=2;
+  string ifName=3;
+  string namespace=4;
+  string name=5;
+  string uid=6;
+}
+
+message IPAMResponse{
+  string ip=1;
+}
+
+service ipService{
+  rpc Allocate(IPAMRequest) returns (IPAMResponse){
+    option(google.api.http) = {
+      post:"/v1/ipam"
+      body:"*"
+    };
+  }
+  rpc Release(IPAMRequest) returns (IPAMResponse){
+    option(google.api.http) = {
+      delete:"/v1/ipam"
+      body:"*"
+    };
+  }
+}

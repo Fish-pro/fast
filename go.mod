@@ -7,6 +7,9 @@ require (
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.2.0
 	github.com/spf13/cobra v1.6.0
+	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
+	google.golang.org/grpc v1.51.0
+	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/apiserver v0.27.1
@@ -97,9 +100,6 @@ require (
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21 // indirect
-	google.golang.org/grpc v1.51.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
