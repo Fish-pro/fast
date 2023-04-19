@@ -19,6 +19,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
+	"net"
 	"os"
 	"time"
 
@@ -36,6 +38,8 @@ import (
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
 
+	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
+	ipamservicev1 "github.com/fast-io/fast/api/service/v1"
 	bpfmap "github.com/fast-io/fast/bpf/map"
 	"github.com/fast-io/fast/cmd/agent/app/config"
 	"github.com/fast-io/fast/cmd/agent/app/options"
@@ -122,9 +126,10 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 
 	// new normal informer factory
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c.Client, time.Second*30)
+	// new ips informer factory
+	ipsInformerFactory := ipsinformers.NewSharedInformerFactory(ipsManager, time.Second*30)
 
 	// 2.Obtain the cluster pod IP and store the information to the cluster eBPF map
-	// TODO: need input eBPF engine
 	controller, err := clusterpodctrl.NewController(
 		ctx,
 		c.Client,
@@ -135,10 +140,31 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	}
 	go controller.Run(ctx)
 
-	// new ips informer factory
-	ipsInformerFactory := ipsinformers.NewSharedInformerFactory(ipsManager, time.Second*30)
+	// 3.start grpc server
+	var server *grpc.Server
+	var opts []grpc.ServerOption
+	server = grpc.NewServer(opts...)
+	listen, err := net.Listen("tcp", ":"+"8099")
+	if err != nil {
+		logger.Error(err, "gRPC listen error")
+		return err
+	}
+	ipamSvc := ipamservicev1.NewIPAMService(
+		ctx,
+		clientBuilder.IpsClientOrDie("fast-agent"),
+		kubeInformerFactory.Core().V1().Pods(),
+		ipsInformerFactory.Sample().V1alpha1().Ipses(),
+		ipsInformerFactory.Sample().V1alpha1().IpEndpoints(),
+	)
+	ipamapiv1.RegisterIpServiceServer(server, ipamSvc)
 
-	// 3.start unix server
+	go func() {
+		logger.Info("starting gRPC server...")
+		err = server.Serve(listen)
+		if err != nil {
+			logger.Error(err, "start gRPC server error")
+		}
+	}()
 
 	kubeInformerFactory.Start(stopCh)
 	ipsInformerFactory.Start(stopCh)

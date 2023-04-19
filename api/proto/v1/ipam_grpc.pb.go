@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type IpServiceClient interface {
 	Allocate(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error)
 	Release(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error)
+	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
 type ipServiceClient struct {
@@ -52,12 +53,22 @@ func (c *ipServiceClient) Release(ctx context.Context, in *IPAMRequest, opts ...
 	return out, nil
 }
 
+func (c *ipServiceClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
+	out := new(HealthResponse)
+	err := c.cc.Invoke(ctx, "/v1.ipService/Health", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IpServiceServer is the server API for IpService service.
 // All implementations must embed UnimplementedIpServiceServer
 // for forward compatibility
 type IpServiceServer interface {
 	Allocate(context.Context, *IPAMRequest) (*IPAMResponse, error)
 	Release(context.Context, *IPAMRequest) (*IPAMResponse, error)
+	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	mustEmbedUnimplementedIpServiceServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedIpServiceServer) Allocate(context.Context, *IPAMRequest) (*IP
 }
 func (UnimplementedIpServiceServer) Release(context.Context, *IPAMRequest) (*IPAMResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Release not implemented")
+}
+func (UnimplementedIpServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
 }
 func (UnimplementedIpServiceServer) mustEmbedUnimplementedIpServiceServer() {}
 
@@ -120,6 +134,24 @@ func _IpService_Release_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IpService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IpServiceServer).Health(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/v1.ipService/Health",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IpServiceServer).Health(ctx, req.(*HealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IpService_ServiceDesc is the grpc.ServiceDesc for IpService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var IpService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Release",
 			Handler:    _IpService_Release_Handler,
+		},
+		{
+			MethodName: "Health",
+			Handler:    _IpService_Health_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

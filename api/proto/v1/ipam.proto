@@ -16,6 +16,13 @@ message IPAMResponse{
   string ip=1;
 }
 
+
+message HealthRequest{}
+
+message HealthResponse{
+  string msg=1;
+}
+
 service ipService{
   rpc Allocate(IPAMRequest) returns (IPAMResponse){
     option(google.api.http) = {
@@ -27,6 +34,11 @@ service ipService{
     option(google.api.http) = {
       delete:"/v1/ipam"
       body:"*"
+    };
+  }
+  rpc Health(HealthRequest) returns (HealthResponse){
+    option(google.api.http) = {
+      get:"/v1/health"
     };
   }
 }
