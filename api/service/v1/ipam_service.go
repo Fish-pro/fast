@@ -3,17 +3,17 @@ package v1
 import (
 	"context"
 	"fmt"
-	"github.com/fast-io/fast/pkg/util"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	apiv1 "github.com/fast-io/fast/api/proto/v1"
+	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions/ips/v1alpha1"
 	ipslisters "github.com/fast-io/fast/pkg/generated/listers/ips/v1alpha1"
+	"github.com/fast-io/fast/pkg/util"
 )
 
 const IpsPodAnnotation = "fast.io/ips"
@@ -30,7 +30,7 @@ type IPAMService struct {
 	ipsSynced  cache.InformerSynced
 	ipepSynced cache.InformerSynced
 
-	apiv1.UnimplementedIpServiceServer
+	ipamapiv1.UnimplementedIpServiceServer
 }
 
 func NewIPAMService(
@@ -38,7 +38,7 @@ func NewIPAMService(
 	client ipsversioned.Interface,
 	podInformer coreinformers.PodInformer,
 	ipsInformer ipsinformers.IpsInformer,
-	ipepInformer ipsinformers.IpEndpointInformer) apiv1.IpServiceServer {
+	ipepInformer ipsinformers.IpEndpointInformer) ipamapiv1.IpServiceServer {
 
 	ipamSvc := &IPAMService{
 		ctx:        ctx,
@@ -66,11 +66,11 @@ func (s *IPAMService) Start(ctx context.Context) {
 	}
 }
 
-func (s *IPAMService) Health(context.Context, *apiv1.HealthRequest) (*apiv1.HealthResponse, error) {
-	return &apiv1.HealthResponse{Msg: "ok"}, nil
+func (s *IPAMService) Health(context.Context, *ipamapiv1.HealthRequest) (*ipamapiv1.HealthResponse, error) {
+	return &ipamapiv1.HealthResponse{Msg: "ok"}, nil
 }
 
-func (s *IPAMService) Allocate(ctx context.Context, req *apiv1.IPAMRequest) (*apiv1.IPAMResponse, error) {
+func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.IPAMRequest) (*ipamapiv1.IPAMResponse, error) {
 	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (s *IPAMService) Allocate(ctx context.Context, req *apiv1.IPAMRequest) (*ap
 		return nil, err
 	}
 	if ipep != nil {
-		return &apiv1.IPAMResponse{Ip: *ipep.Status.IPs.IPv4}, nil
+		return &ipamapiv1.IPAMResponse{Ip: *ipep.Status.IPs.IPv4}, nil
 	}
 
 	val, ok := pod.Annotations[IpsPodAnnotation]
@@ -101,6 +101,6 @@ func (s *IPAMService) Allocate(ctx context.Context, req *apiv1.IPAMRequest) (*ap
 	return nil, nil
 }
 
-func (s *IPAMService) Release(context.Context, *apiv1.IPAMRequest) (*apiv1.IPAMResponse, error) {
+func (s *IPAMService) Release(context.Context, *ipamapiv1.IPAMRequest) (*ipamapiv1.IPAMResponse, error) {
 	return nil, nil
 }

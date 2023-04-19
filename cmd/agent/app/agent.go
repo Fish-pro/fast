@@ -19,12 +19,12 @@ package app
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"net"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kubeinformers "k8s.io/client-go/informers"
