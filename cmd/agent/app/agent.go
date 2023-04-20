@@ -144,13 +144,14 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	var server *grpc.Server
 	var opts []grpc.ServerOption
 	server = grpc.NewServer(opts...)
-	listen, err := net.Listen("tcp", ":"+"8099")
+	listen, err := net.Listen("tcp", ":"+"8999")
 	if err != nil {
 		logger.Error(err, "gRPC listen error")
 		return err
 	}
 	ipamSvc := ipamservicev1.NewIPAMService(
 		ctx,
+		logger,
 		clientBuilder.IpsClientOrDie("fast-agent"),
 		kubeInformerFactory.Core().V1().Pods(),
 		ipsInformerFactory.Sample().V1alpha1().Ipses(),

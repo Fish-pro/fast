@@ -1,6 +1,7 @@
 package util
 
 import (
+	"k8s.io/apimachinery/pkg/util/sets"
 	"math/big"
 	"net"
 	"strconv"
@@ -61,4 +62,17 @@ func ParseIPRange(ipRange string) []net.IP {
 	}
 
 	return ips
+}
+
+func ExcludeIPs(allIps []string, excludeIps []string) []net.IP {
+	var resIps []net.IP
+
+	excludeIpSet := sets.NewString(excludeIps...)
+	for _, ip := range allIps {
+		if excludeIpSet.Has(ip) {
+			continue
+		}
+		resIps = append(resIps, net.ParseIP(ip).To4())
+	}
+	return resIps
 }

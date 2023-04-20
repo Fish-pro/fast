@@ -38,7 +38,45 @@ func cmdAdd(args *skel.CmdArgs) error {
 		"Args: ", args.Args,
 		"Path: ", args.Path,
 		"StdinData: ", string(args.StdinData))
-	conn, err := grpc.Dial(":8099")
+	conn, err := grpc.Dial(":8999")
+	if err != nil {
+		util.WriteLog("failed to connect server", "error", err.Error())
+	}
+	defer conn.Close()
+
+	client := ipamapiv1.NewIpServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	hresp, err := client.Health(ctx, &ipamapiv1.HealthRequest{})
+	if err != nil {
+		return err
+	}
+	if hresp.Msg != "ok" {
+		return err
+	}
+
+	_, err = client.Allocate(ctx, &ipamapiv1.IPAMRequest{
+		Command: "Add",
+		Id:      args.ContainerID,
+		IfName:  args.IfName,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func cmdDel(args *skel.CmdArgs) error {
+	util.WriteLog(
+		"Del", "ContainerID: ", args.ContainerID,
+		"NetNs: ", args.Netns,
+		"IfName: ", args.IfName,
+		"Args: ", args.Args,
+		"Path: ", args.Path,
+		"StdinData: ", string(args.StdinData))
+	conn, err := grpc.Dial(":8999")
 	if err != nil {
 		util.WriteLog("failed to connect server", "error", err.Error())
 	}
@@ -65,17 +103,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	return nil
-}
-
-func cmdDel(args *skel.CmdArgs) error {
-	util.WriteLog(
-		"Del", "ContainerID: ", args.ContainerID,
-		"NetNs: ", args.Netns,
-		"IfName: ", args.IfName,
-		"Args: ", args.Args,
-		"Path: ", args.Path,
-		"StdinData: ", string(args.StdinData))
 	return nil
 }
 

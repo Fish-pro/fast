@@ -49,7 +49,7 @@ type IpsSpec struct {
 // IpsStatus defines the observed state of Ips
 type IpsStatus struct {
 	// +kubebuilder:validation:Optional
-	AllocatedIPs *string `json:"allocatedIPs,omitempty"`
+	AllocatedIPs map[string]AllocatedPod `json:"allocatedIPs,omitempty"`
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
@@ -58,4 +58,9 @@ type IpsStatus struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
 	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+}
+
+type AllocatedPod struct {
+	Pod    string `json:"pod,omitempty"`
+	PodUid string `json:"poduid,omitempty"`
 }

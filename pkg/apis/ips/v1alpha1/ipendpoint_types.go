@@ -42,14 +42,14 @@ type IPAllocationDetail struct {
 	NIC string `json:"interface"`
 
 	// +kubebuilder:validation:Optional
-	IPv4 *string `json:"ipv4,omitempty"`
+	IPv4 string `json:"ipv4,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	IPv6 *string `json:"ipv6,omitempty"`
+	IPv6 string `json:"ipv6,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	IPv4Pool *string `json:"ipv4Pool,omitempty"`
+	IPv4Pool string `json:"ipv4Pool,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	IPv6Pool *string `json:"ipv6Pool,omitempty"`
+	IPv6Pool string `json:"ipv6Pool,omitempty"`
 }
