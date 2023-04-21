@@ -3,6 +3,7 @@ package ipsmanager
 import (
 	"context"
 	"fmt"
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -10,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
-	"net"
 
 	ipsv1alpha1 "github.com/fast-io/fast/pkg/apis/ips/v1alpha1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"

@@ -203,15 +203,15 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		return nil
 	}
 
-	count := int64(0)
+	count := 0
 	for _, ip := range ips.Spec.IPs {
-		count += int64(len(util.ParseIPRange(ip)))
+		count += len(util.ParseIPRange(ip))
 	}
+	nowStatus := ipsv1alpha1.IpsStatus{}
+	nowStatus.TotalIPCount = count
+	nowStatus.AllocatedIPCount = len(nowStatus.AllocatedIPs)
 
-	currentStatus := ipsv1alpha1.IpsStatus{}
-	currentStatus.TotalIPCount = &count
-
-	return c.updateIpsStatusIfNeed(ctx, ips, currentStatus)
+	return c.updateIpsStatusIfNeed(ctx, ips, nowStatus)
 }
 
 // updateIpsStatusIfNeed update status if we need

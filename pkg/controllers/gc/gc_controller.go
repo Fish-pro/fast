@@ -6,7 +6,6 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -17,15 +16,13 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
-	ipsv1alpha1 "github.com/fast-io/fast/pkg/apis/ips/v1alpha1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 	"github.com/fast-io/fast/pkg/generated/clientset/versioned/scheme"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions/ips/v1alpha1"
-	ipslisters "github.com/fast-io/fast/pkg/generated/listers/ips/v1alpha1"
+	"github.com/fast-io/fast/pkg/ipsmanager"
 )
 
 const (
@@ -47,12 +44,10 @@ type Controller struct {
 
 	// podLister define the cache pod
 	podLister corelisters.PodLister
-	// ipsLister define the cache pod
-	ipsLister ipslisters.IpsLister
-
 	// synced define the sync for relist
 	podSynced cache.InformerSynced
-	ipsSynced cache.InformerSynced
+
+	ipsManager ipsmanager.IpsManager
 
 	// Ips that need to be synced
 	queue workqueue.RateLimitingInterface
@@ -80,9 +75,8 @@ func NewController(
 		client:           client,
 		kubeClient:       kubeClient,
 		podLister:        podInformer.Lister(),
-		ipsLister:        ipsInformer.Lister(),
 		podSynced:        podInformer.Informer().HasSynced,
-		ipsSynced:        ipsInformer.Informer().HasSynced,
+		ipsManager:       ipsmanager.NewIpsManager(client),
 		eventBroadcaster: eventBroadcaster,
 		eventRecorder:    eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: ControllerName}),
 		queue: workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
@@ -128,7 +122,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 	// Wait for the caches to be synced before starting worker
 	logger.Info("Waiting for informer caches to sync")
-	if !cache.WaitForCacheSync(ctx.Done(), c.podSynced, c.ipsSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.podSynced) {
 		logger.Error(fmt.Errorf("failed to sync informer"), "Informer caches to sync bad")
 		return
 	}
@@ -204,32 +198,9 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		logger.Error(err, "Failed to get pod", "pod", name)
 		return err
 	}
-	_ = obj.DeepCopy()
+	pod := obj.DeepCopy()
 
-	return nil
-}
-
-// updateIpsStatusIfNeed update status if we need
-func (c *Controller) updateIpsStatusIfNeed(ctx context.Context, ips *ipsv1alpha1.Ips, status ipsv1alpha1.IpsStatus) error {
-	logger := klog.FromContext(ctx)
-	if !equality.Semantic.DeepEqual(ips.Status, status) {
-		ips.Status = status
-		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, updateErr := c.client.SampleV1alpha1().Ipses().UpdateStatus(ctx, ips, metav1.UpdateOptions{})
-			if updateErr == nil {
-				return nil
-			}
-			got, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ips.Name, metav1.GetOptions{})
-			if err == nil {
-				ips = got.DeepCopy()
-				ips.Status = status
-			} else {
-				logger.Error(err, "Failed to get ips", "ips", ips.Name)
-			}
-			return fmt.Errorf("failed to update ips %s status: %w", ips.Name, updateErr)
-		})
-	}
-	return nil
+	return c.ipsManager.ReleaseIP(ctx, pod)
 }
 
 // If nodeName is used, it is not queued if there is no match
