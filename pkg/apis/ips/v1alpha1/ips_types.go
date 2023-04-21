@@ -53,11 +53,11 @@ type IpsStatus struct {
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	TotalIPCount *int64 `json:"totalIPCount,omitempty"`
+	TotalIPCount int `json:"totalIPCount,omitempty"`
 
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Optional
-	AllocatedIPCount *int64 `json:"allocatedIPCount,omitempty"`
+	AllocatedIPCount int `json:"allocatedIPCount,omitempty"`
 }
 
 type AllocatedPod struct {

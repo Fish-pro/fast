@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IpServiceClient interface {
-	Allocate(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error)
-	Release(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error)
+	Allocate(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*AllocateResponse, error)
+	Release(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*ReleaseResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
@@ -35,8 +35,8 @@ func NewIpServiceClient(cc grpc.ClientConnInterface) IpServiceClient {
 	return &ipServiceClient{cc}
 }
 
-func (c *ipServiceClient) Allocate(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error) {
-	out := new(IPAMResponse)
+func (c *ipServiceClient) Allocate(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*AllocateResponse, error) {
+	out := new(AllocateResponse)
 	err := c.cc.Invoke(ctx, "/v1.ipService/Allocate", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -44,8 +44,8 @@ func (c *ipServiceClient) Allocate(ctx context.Context, in *IPAMRequest, opts ..
 	return out, nil
 }
 
-func (c *ipServiceClient) Release(ctx context.Context, in *IPAMRequest, opts ...grpc.CallOption) (*IPAMResponse, error) {
-	out := new(IPAMResponse)
+func (c *ipServiceClient) Release(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*ReleaseResponse, error) {
+	out := new(ReleaseResponse)
 	err := c.cc.Invoke(ctx, "/v1.ipService/Release", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -66,8 +66,8 @@ func (c *ipServiceClient) Health(ctx context.Context, in *HealthRequest, opts ..
 // All implementations must embed UnimplementedIpServiceServer
 // for forward compatibility
 type IpServiceServer interface {
-	Allocate(context.Context, *IPAMRequest) (*IPAMResponse, error)
-	Release(context.Context, *IPAMRequest) (*IPAMResponse, error)
+	Allocate(context.Context, *AllocateRequest) (*AllocateResponse, error)
+	Release(context.Context, *AllocateRequest) (*ReleaseResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	mustEmbedUnimplementedIpServiceServer()
 }
@@ -76,10 +76,10 @@ type IpServiceServer interface {
 type UnimplementedIpServiceServer struct {
 }
 
-func (UnimplementedIpServiceServer) Allocate(context.Context, *IPAMRequest) (*IPAMResponse, error) {
+func (UnimplementedIpServiceServer) Allocate(context.Context, *AllocateRequest) (*AllocateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Allocate not implemented")
 }
-func (UnimplementedIpServiceServer) Release(context.Context, *IPAMRequest) (*IPAMResponse, error) {
+func (UnimplementedIpServiceServer) Release(context.Context, *AllocateRequest) (*ReleaseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Release not implemented")
 }
 func (UnimplementedIpServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
@@ -99,7 +99,7 @@ func RegisterIpServiceServer(s grpc.ServiceRegistrar, srv IpServiceServer) {
 }
 
 func _IpService_Allocate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IPAMRequest)
+	in := new(AllocateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -111,13 +111,13 @@ func _IpService_Allocate_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/v1.ipService/Allocate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IpServiceServer).Allocate(ctx, req.(*IPAMRequest))
+		return srv.(IpServiceServer).Allocate(ctx, req.(*AllocateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _IpService_Release_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IPAMRequest)
+	in := new(AllocateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func _IpService_Release_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/v1.ipService/Release",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IpServiceServer).Release(ctx, req.(*IPAMRequest))
+		return srv.(IpServiceServer).Release(ctx, req.(*AllocateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

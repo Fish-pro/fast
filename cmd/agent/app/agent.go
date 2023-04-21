@@ -151,11 +151,8 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	}
 	ipamSvc := ipamservicev1.NewIPAMService(
 		ctx,
-		logger,
 		clientBuilder.IpsClientOrDie("fast-agent"),
 		kubeInformerFactory.Core().V1().Pods(),
-		ipsInformerFactory.Sample().V1alpha1().Ipses(),
-		ipsInformerFactory.Sample().V1alpha1().IpEndpoints(),
 	)
 	ipamapiv1.RegisterIpServiceServer(server, ipamSvc)
 
