@@ -1,7 +1,9 @@
 package main
 
-import "github.com/fast-io/fast/pkg/plugin"
+import (
+	"github.com/fast-io/fast/pkg/plugins"
+)
 
 func main() {
-	plugin.Main()
+	plugins.Main()
 }
