@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: ipendpoints.sample.fast.io
+  name: gateways.sample.fast.io
 spec:
   group: sample.fast.io
   names:
-    kind: IpEndpoint
-    listKind: IpEndpointList
-    plural: ipendpoints
-    singular: ipendpoint
-  scope: Namespaced
+    kind: Gateway
+    listKind: GatewayList
+    plural: gateways
+    singular: gateway
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: IpEndpoint is the Schema for the fast api
+        description: Gateway is the Schema for the fast api
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,32 +32,8 @@ spec:
             type: string
           metadata:
             type: object
-          status:
-            description: IpEndpointStatus defines the observed state of Ips
-            properties:
-              ips:
-                properties:
-                  interface:
-                    type: string
-                  ipv4:
-                    type: string
-                  ipv4Pool:
-                    type: string
-                  ipv6:
-                    type: string
-                  ipv6Pool:
-                    type: string
-                required:
-                - interface
-                type: object
-              node:
-                type: string
-              uid:
-                type: string
-            required:
-            - ips
-            - node
-            - uid
+          spec:
+            description: GatewaySpec defines the desired state of Gateway
             type: object
         type: object
     served: true

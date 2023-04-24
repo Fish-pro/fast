@@ -25,6 +25,7 @@ type IpServiceClient interface {
 	Allocate(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*AllocateResponse, error)
 	Release(ctx context.Context, in *AllocateRequest, opts ...grpc.CallOption) (*ReleaseResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	GetGateway(ctx context.Context, in *GatewayRequest, opts ...grpc.CallOption) (*GatewayResponse, error)
 }
 
 type ipServiceClient struct {
@@ -62,6 +63,15 @@ func (c *ipServiceClient) Health(ctx context.Context, in *HealthRequest, opts ..
 	return out, nil
 }
 
+func (c *ipServiceClient) GetGateway(ctx context.Context, in *GatewayRequest, opts ...grpc.CallOption) (*GatewayResponse, error) {
+	out := new(GatewayResponse)
+	err := c.cc.Invoke(ctx, "/v1.ipService/GetGateway", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IpServiceServer is the server API for IpService service.
 // All implementations must embed UnimplementedIpServiceServer
 // for forward compatibility
@@ -69,6 +79,7 @@ type IpServiceServer interface {
 	Allocate(context.Context, *AllocateRequest) (*AllocateResponse, error)
 	Release(context.Context, *AllocateRequest) (*ReleaseResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
+	GetGateway(context.Context, *GatewayRequest) (*GatewayResponse, error)
 	mustEmbedUnimplementedIpServiceServer()
 }
 
@@ -84,6 +95,9 @@ func (UnimplementedIpServiceServer) Release(context.Context, *AllocateRequest) (
 }
 func (UnimplementedIpServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
+}
+func (UnimplementedIpServiceServer) GetGateway(context.Context, *GatewayRequest) (*GatewayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGateway not implemented")
 }
 func (UnimplementedIpServiceServer) mustEmbedUnimplementedIpServiceServer() {}
 
@@ -152,6 +166,24 @@ func _IpService_Health_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IpService_GetGateway_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GatewayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IpServiceServer).GetGateway(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/v1.ipService/GetGateway",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IpServiceServer).GetGateway(ctx, req.(*GatewayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IpService_ServiceDesc is the grpc.ServiceDesc for IpService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -170,6 +202,10 @@ var IpService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Health",
 			Handler:    _IpService_Health_Handler,
+		},
+		{
+			MethodName: "GetGateway",
+			Handler:    _IpService_GetGateway_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

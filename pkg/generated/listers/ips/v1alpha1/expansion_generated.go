@@ -17,6 +17,10 @@ limitations under the License.
 
 package v1alpha1
 
+// GatewayListerExpansion allows custom methods to be added to
+// GatewayLister.
+type GatewayListerExpansion interface{}
+
 // IpEndpointListerExpansion allows custom methods to be added to
 // IpEndpointLister.
 type IpEndpointListerExpansion interface{}

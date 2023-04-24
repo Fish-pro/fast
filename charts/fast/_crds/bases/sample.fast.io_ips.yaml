@@ -189,13 +189,18 @@ spec:
             description: IpsStatus defines the observed state of Ips
             properties:
               allocatedIPCount:
-                format: int64
                 minimum: 0
                 type: integer
               allocatedIPs:
-                type: string
+                additionalProperties:
+                  properties:
+                    pod:
+                      type: string
+                    poduid:
+                      type: string
+                  type: object
+                type: object
               totalIPCount:
-                format: int64
                 minimum: 0
                 type: integer
             type: object

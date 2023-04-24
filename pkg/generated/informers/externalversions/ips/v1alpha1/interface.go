@@ -23,6 +23,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Gateways returns a GatewayInformer.
+	Gateways() GatewayInformer
 	// IpEndpoints returns a IpEndpointInformer.
 	IpEndpoints() IpEndpointInformer
 	// Ipses returns a IpsInformer.
@@ -38,6 +40,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// Gateways returns a GatewayInformer.
+func (v *version) Gateways() GatewayInformer {
+	return &gatewayInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // IpEndpoints returns a IpEndpointInformer.

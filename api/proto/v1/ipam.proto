@@ -3,6 +3,12 @@ package v1;
 option go_package = ".;proto_v1";
 import "google/api/annotations.proto";
 
+message HealthRequest{}
+
+message HealthResponse{
+  string msg=1;
+}
+
 message AllocateRequest{
   string command=1;
   string id=2;
@@ -18,10 +24,11 @@ message AllocateResponse{
 
 message ReleaseResponse{}
 
-message HealthRequest{}
-
-message HealthResponse{
-  string msg=1;
+message GatewayRequest{
+  string node=1;
+}
+message GatewayResponse{
+  string gateway=1;
 }
 
 service ipService{
@@ -40,6 +47,11 @@ service ipService{
   rpc Health(HealthRequest) returns (HealthResponse){
     option(google.api.http) = {
       get:"/v1/health"
+    };
+  }
+  rpc GetGateway(GatewayRequest) returns (GatewayResponse){
+    option(google.api.http) = {
+      post:"/v1/gateway"
     };
   }
 }

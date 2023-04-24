@@ -52,6 +52,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=sample.fast.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("gateways"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Sample().V1alpha1().Gateways().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("ipendpoints"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Sample().V1alpha1().IpEndpoints().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("ipses"):

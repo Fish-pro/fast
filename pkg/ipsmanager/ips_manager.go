@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	IpsPodAnnotation = "fast.io/ips"
-	DefaultIpsName   = "default-ips"
+	IpsPodAnnotation   = "fast.io/ips"
+	DefaultIpsName     = "default-ips"
+	DefaultGatewayName = "default-gateway"
 )
 
 type IpsManager interface {
@@ -27,6 +28,7 @@ type IpsManager interface {
 	ReleaseIP(ctx context.Context, pod *corev1.Pod) error
 	UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error
 	CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
+	GetGateway(ctx context.Context, node string) (net.IP, error)
 }
 
 type ipsManager struct {
@@ -133,4 +135,21 @@ func (c *ipsManager) CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1al
 		return err
 	}
 	return nil
+}
+
+func (c *ipsManager) GetGateway(ctx context.Context, node string) (net.IP, error) {
+	gw, err := c.client.SampleV1alpha1().Gateways().Get(ctx, DefaultGatewayName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if len(gw.Spec.NodeGateways) == 0 {
+		return nil, fmt.Errorf("default gateway not setting node gateway")
+	}
+	for _, ng := range gw.Spec.NodeGateways {
+		if ng.Node != node {
+			continue
+		}
+		return net.ParseIP(ng.Gateway), nil
+	}
+	return nil, fmt.Errorf("can not found default gateway for node %s", node)
 }

@@ -17,6 +17,8 @@ limitations under the License.
 
 package v1alpha1
 
+type GatewayExpansion interface{}
+
 type IpEndpointExpansion interface{}
 
 type IpsExpansion interface{}
