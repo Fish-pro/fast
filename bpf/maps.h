@@ -9,11 +9,11 @@
 
 #define DEFAULT_TUNNEL_ID 13190
 
-struct endpointKey {
+struct localIpsMapKey {
   __u32 ip;
 };
 
-struct endpointInfo {
+struct localIpsMapInfo {
   __u32 ifIndex;
   __u32 lxcIfIndex;
   __u8 mac[8];
@@ -23,8 +23,8 @@ struct endpointInfo {
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct endpointKey);
-  __type(value, struct endpointInfo);
+	__type(key, struct localIpsMapKey);
+  __type(value, struct localIpsMapInfo);
   // 如果别的地方已经往某条路径 pin 了, 需要加上这个属性
   // 并且 struct 的名字一定得和 bpftool map list 出来的一样
   __uint(pinning, LIBBPF_PIN_BY_NAME);
@@ -33,35 +33,35 @@ struct {
 } ding_lxc __section_maps_btf;
 
 
-struct podNodeKey {
+struct clusterIpsMapKey {
   __u32 ip;
 };
 
-struct podNodeValue {
+struct clusterIpsMapInfo {
   __u32 ip;
 };
 
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct podNodeKey);
-  __type(value, struct podNodeValue);
+	__type(key, struct clusterIpsMapKey);
+  __type(value, struct clusterIpsMapInfo);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
 } ding_ip __section_maps_btf;
 
-struct localNodeMapKey {
+struct localDevMapKey {
 	__u32 type;
 };
 
-struct localNodeMapValue {
+struct localDevMapValue {
   __u32 ifIndex;
 };
 
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct localNodeMapKey);
-  __type(value, struct localNodeMapValue);
+	__type(key, struct localDevMapKey);
+  __type(value, struct localDevMapValue);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
 } ding_local __section_maps_btf;
 
