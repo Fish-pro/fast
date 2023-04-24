@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fast-io/fast/pkg/ipsmanager"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -14,6 +13,7 @@ import (
 
 	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
+	"github.com/fast-io/fast/pkg/ipsmanager"
 	"github.com/fast-io/fast/pkg/util"
 )
 
