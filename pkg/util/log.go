@@ -1,39 +1,26 @@
 package util
 
 import (
-	"bufio"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
-var logPath string
+var logger = logrus.New()
 
-func init() {
-	val, ok := os.LookupEnv("LOG_PATH")
-	if ok {
+func NewLogger() *logrus.Logger {
+	logPath := "/var/log/fast/cni/cni.log"
+	if val, ok := os.LookupEnv("LOG_PATH"); ok {
 		logPath = val
-	} else {
-		logPath = "/var/log/fast/cni/cni.log"
 	}
-}
 
-func WriteLog(log ...string) {
-	file, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logPath, os.O_APPEND, 0666)
 	if err != nil {
-		os.Create(logPath)
-	}
-	defer file.Close()
-
-	write := bufio.NewWriter(file)
-	logRes := ""
-	for _, c := range log {
-		logRes += c
-		logRes += " "
+		logger.Info("failed to open log file")
 	}
 
-	_, err = write.WriteString(logRes + "\r\n")
-	if err != nil {
-		return
-	}
-
-	write.Flush()
+	logger.SetFormatter(&logrus.TextFormatter{})
+	logger.Out = file
+	logrus.Info("init logger successfully")
+	return logger
 }

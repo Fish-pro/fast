@@ -16,6 +16,7 @@ import (
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/containernetworking/plugins/pkg/ns"
 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
+	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"google.golang.org/grpc"
 
@@ -235,37 +236,38 @@ func attachTcBPFIntoVxlan(vxlan *netlink.Vxlan) error {
  * tc filter add dev ${pod veth name} ingress bpf direct-action obj veth_ingress.o
  */
 func cmdAdd(args *skel.CmdArgs) error {
-	util.WriteLog(
-		"ADD", "ContainerID: ", args.ContainerID,
-		"NetNs: ", args.Netns,
-		"IfName: ", args.IfName,
-		"Args: ", args.Args,
-		"Path: ", args.Path,
-		"StdinData: ", string(args.StdinData))
+	logger := util.NewLogger()
+	logger.WithFields(logrus.Fields{
+		"ContainerID": args.ContainerID,
+		"NetNs":       args.Netns,
+		"IfName":      args.IfName,
+		"Args":        args.Args,
+		"Path":        args.Path,
+		"StdinData":   string(args.StdinData),
+	}).Info("ADD")
 
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
 		err := fmt.Errorf("failed to load CNI ENV args: %v", err)
-		util.WriteLog("get k8s arg error", "err: ", err.Error())
+		logger.WithError(err).Error("get k8s arg error")
 		return err
 	}
 
-	util.WriteLog(
-		"k8s arg: ",
-		"PodNamespace", string(k8sArgs.K8S_POD_NAMESPACE),
-		"PodName", string(k8sArgs.K8S_POD_NAME),
-		"PodUid", string(k8sArgs.K8S_POD_UID),
-	)
+	logger.WithFields(logrus.Fields{
+		"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
+		"PodName":      string(k8sArgs.K8S_POD_NAME),
+		"PodUid":       string(k8sArgs.K8S_POD_UID),
+	}).Info("get k8s args")
 
 	pluginConfig, err := loadConfig(args.StdinData)
 	if err != nil {
-		util.WriteLog("failed to load plugin config", "error: ", err.Error())
+		logger.WithError(err).Error("failed to load plugin config")
 		return err
 	}
 
 	conn, err := grpc.Dial(":8999")
 	if err != nil {
-		util.WriteLog("failed to connect server", "error", err.Error())
+		logger.WithError(err).Error("failed to connect server")
 		return err
 	}
 	defer conn.Close()
@@ -293,12 +295,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if err != nil {
 		return err
 	}
-	util.WriteLog(
-		"ADD",
-		"namespace: ", string(k8sArgs.K8S_POD_NAMESPACE),
-		"name: ", string(k8sArgs.K8S_POD_NAME),
-		"allocated ip: ", resp.Ip,
-	)
+	logger.WithFields(logrus.Fields{
+		"namespace": string(k8sArgs.K8S_POD_NAMESPACE),
+		"name":      string(k8sArgs.K8S_POD_NAME),
+		"ip":        resp.Ip,
+	}).Info("allocate ip successfully")
 
 	hostName, err := os.Hostname()
 	if err != nil {
@@ -312,19 +313,19 @@ func cmdAdd(args *skel.CmdArgs) error {
 	// create or get veth_host and veth_net
 	gwPair, netPair, err := createHostVethPair()
 	if err != nil {
-		util.WriteLog("failed to create host veth pair", "error: ", err.Error())
+		logger.WithError(err).Error("failed to create host veth pair")
 		return err
 	}
 
 	// set up host veth pair
 	if err := setUpVethPair(gwPair, netPair); err != nil {
-		util.WriteLog("failed to set up host veth pair", "error: ", err.Error())
+		logger.WithError(err).Error("failed to set up host veth pair")
 		return err
 	}
 
 	// set ip for host pair
 	if err := setIPForPair(gwPair.Name, gwResp.Gateway); err != nil {
-		util.WriteLog("failed to set ip for host pair", "error: ", err.Error())
+		logger.WithError(err).Error("failed to set ip for host pair")
 		return err
 	}
 
@@ -410,24 +411,27 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	util.WriteLog(
-		"DEL", "ContainerID: ", args.ContainerID,
-		"NetNs: ", args.Netns,
-		"IfName: ", args.IfName,
-		"Args: ", args.Args,
-		"Path: ", args.Path,
-		"StdinData: ", string(args.StdinData))
+	logger := util.NewLogger()
+	logger.WithFields(logrus.Fields{
+		"ContainerID": args.ContainerID,
+		"NetNs":       args.Netns,
+		"IfName":      args.IfName,
+		"Args":        args.Args,
+		"Path":        args.Path,
+		"StdinData":   string(args.StdinData),
+	}).Info("DEL")
 	conn, err := grpc.Dial(":8999")
 	if err != nil {
-		util.WriteLog("failed to connect server", "error", err.Error())
+		logger.WithError(err).Error("failed to connect grpc server")
+		return err
 	}
 	defer conn.Close()
 
-	client := ipamapiv1.NewIpServiceClient(conn)
+	agentClient := ipamapiv1.NewIpServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	hresp, err := client.Health(ctx, &ipamapiv1.HealthRequest{})
+	hresp, err := agentClient.Health(ctx, &ipamapiv1.HealthRequest{})
 	if err != nil {
 		return err
 	}
@@ -436,7 +440,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		return fmt.Errorf("ipam svervice is unhealthy")
 	}
 
-	_, err = client.Release(ctx, &ipamapiv1.AllocateRequest{
+	_, err = agentClient.Release(ctx, &ipamapiv1.AllocateRequest{
 		Command: "DEL",
 		Id:      args.ContainerID,
 		IfName:  args.IfName,
@@ -446,13 +450,15 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
-	util.WriteLog(
-		"Check", "ContainerID: ", args.ContainerID,
-		"NetNs: ", args.Netns,
-		"IfName: ", args.IfName,
-		"Args: ", args.Args,
-		"Path: ", args.Path,
-		"StdinData: ", string(args.StdinData))
+	logger := util.NewLogger()
+	logger.WithFields(logrus.Fields{
+		"ContainerID": args.ContainerID,
+		"NetNs":       args.Netns,
+		"IfName":      args.IfName,
+		"Args":        args.Args,
+		"Path":        args.Path,
+		"StdinData":   string(args.StdinData),
+	}).Info("CHECK")
 	return nil
 }
 
