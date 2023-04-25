@@ -76,7 +76,7 @@ func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateReque
 		return nil, err
 	}
 
-	ipep, err := util.NewIpEndpoint(ip.String(), pod, ips)
+	ipep, err := s.ipsManager.NewIpEndpoint(ip.String(), pod, ips)
 	if err != nil {
 		return nil, err
 	}

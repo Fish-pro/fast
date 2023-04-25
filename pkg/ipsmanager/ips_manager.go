@@ -11,9 +11,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ipsv1alpha1 "github.com/fast-io/fast/pkg/apis/ips/v1alpha1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
+	"github.com/fast-io/fast/pkg/scheme"
 	"github.com/fast-io/fast/pkg/util"
 )
 
@@ -29,6 +31,7 @@ type IpsManager interface {
 	UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error
 	CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
 	GetGateway(ctx context.Context, node string) (net.IP, error)
+	NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error)
 }
 
 type ipsManager struct {
@@ -152,4 +155,26 @@ func (c *ipsManager) GetGateway(ctx context.Context, node string) (net.IP, error
 		return net.ParseIP(ng.Gateway), nil
 	}
 	return nil, fmt.Errorf("can not found default gateway for node %s", node)
+}
+
+func (c *ipsManager) NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error) {
+	ipep := &ipsv1alpha1.IpEndpoint{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pod.Name,
+			Namespace: pod.Namespace,
+		},
+		Status: ipsv1alpha1.IpEndpointStatus{
+			UID:  string(pod.UID),
+			Node: pod.Spec.NodeName,
+			IPs: ipsv1alpha1.IPAllocationDetail{
+				IPv4:     ip,
+				IPv4Pool: ips.Name,
+			},
+		},
+	}
+
+	if err := controllerutil.SetOwnerReference(pod, ipep, scheme.Scheme); err != nil {
+		return nil, err
+	}
+	return ipep, nil
 }

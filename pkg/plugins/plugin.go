@@ -84,8 +84,8 @@ func setIPForPair(name string, ip string) error {
 	return netlink.AddrAdd(link, &netlink.Addr{IPNet: ipNet})
 }
 
-func createNsVethPair(ifname string, mtu int) (*netlink.Veth, *netlink.Veth, error) {
-	return nettools.CreateVethPair(ifname, mtu)
+func createNsVethPair(ifname string, mtu int, vethName string) (*netlink.Veth, *netlink.Veth, error) {
+	return nettools.CreateVethPair(ifname, mtu, vethName)
 }
 
 func setHostPairIntoHost(veth *netlink.Veth, netNs ns.NetNS) error {
@@ -337,7 +337,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 	var nsPair, hostPair *netlink.Veth
 	err = netNs.Do(func(hostNs ns.NetNS) error {
 		// create veth pair for netns
-		nsPair, hostPair, err = createNsVethPair(args.IfName, 1450)
+		vethName := util.GenerateVethName(
+			"fast",
+			fmt.Sprintf("%s/%s", string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME)))
+		nsPair, hostPair, err = createNsVethPair(args.IfName, 1450, vethName)
 		if err != nil {
 			return err
 		}
