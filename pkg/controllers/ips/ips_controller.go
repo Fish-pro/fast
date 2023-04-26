@@ -3,7 +3,6 @@ package ips
 import (
 	"context"
 	"fmt"
-	"github.com/fast-io/fast/pkg/util"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -25,6 +24,7 @@ import (
 	"github.com/fast-io/fast/pkg/generated/clientset/versioned/scheme"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions/ips/v1alpha1"
 	ipslisters "github.com/fast-io/fast/pkg/generated/listers/ips/v1alpha1"
+	"github.com/fast-io/fast/pkg/util"
 )
 
 const (

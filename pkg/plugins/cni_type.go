@@ -1,8 +1,9 @@
 package plugins
 
 import (
-	"github.com/containernetworking/cni/pkg/types"
 	"net"
+
+	"github.com/containernetworking/cni/pkg/types"
 )
 
 // K8sArgs is the valid CNI_ARGS used for Kubernetes.

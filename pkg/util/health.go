@@ -1,6 +1,8 @@
 package util
 
-import ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
+import (
+	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
+)
 
 const HealthyOk = "OK"
 

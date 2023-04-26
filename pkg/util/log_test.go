@@ -2,8 +2,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestNewLogger(t *testing.T) {
