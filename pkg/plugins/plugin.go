@@ -41,10 +41,8 @@ type PluginConf struct {
 	RuntimeConfig *struct {
 		TestConfig map[string]interface{} `json:"testConfig"`
 	} `json:"runtimeConfig"`
-
-	Bridge string `json:"bridge"`
-	Subnet string `json:"subnet"`
-	MTU    int    `json:"mtu"`
+	Gateway string `json:"gateway"`
+	MTU     int    `json:"mtu"`
 }
 
 func loadConfig(bytes []byte) (*PluginConf, error) {
@@ -272,11 +270,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	defer conn.Close()
 
-	client := ipamapiv1.NewIpServiceClient(conn)
+	agentClient := ipamapiv1.NewIpServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	hresp, err := client.Health(ctx, &ipamapiv1.HealthRequest{})
+	hresp, err := agentClient.Health(ctx, &ipamapiv1.HealthRequest{})
 	if err != nil {
 		return err
 	}
@@ -284,7 +282,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return fmt.Errorf("ipam svervice is unhealthy")
 	}
 
-	resp, err := client.Allocate(ctx, &ipamapiv1.AllocateRequest{
+	resp, err := agentClient.Allocate(ctx, &ipamapiv1.AllocateRequest{
 		Command:   "ADD",
 		Id:        args.ContainerID,
 		IfName:    args.IfName,
@@ -306,9 +304,16 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	gwResp, err := client.GetGateway(ctx, &ipamapiv1.GatewayRequest{
-		Node: hostName,
-	})
+	gwIP := pluginConfig.Gateway
+	if len(gwIP) == 0 {
+		gwResp, err := agentClient.GetGateway(ctx, &ipamapiv1.GatewayRequest{
+			Node: hostName,
+		})
+		if err != nil {
+			return err
+		}
+		gwIP = gwResp.Gateway
+	}
 
 	// create or get veth_host and veth_net
 	gwPair, netPair, err := createHostVethPair()
@@ -324,7 +329,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	// set ip for host pair
-	if err := setIPForPair(gwPair.Name, gwResp.Gateway); err != nil {
+	if err := setIPForPair(gwPair.Name, gwIP); err != nil {
 		logger.WithError(err).Error("failed to set ip for host pair")
 		return err
 	}
@@ -361,10 +366,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 		}
 
 		// add arp table for ns pair
-		if err := setFibTableIntoNs(nsPair, gwResp.Gateway); err != nil {
+		if err := setFibTableIntoNs(nsPair, gwIP); err != nil {
 			return err
 		}
-		if err := setArp(gwResp.Gateway, hostNs, hostPair, args.IfName); err != nil {
+		if err := setArp(gwIP, hostNs, hostPair, args.IfName); err != nil {
 			return err
 		}
 
@@ -399,7 +404,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	_gw, _, _ := net.ParseCIDR(gwResp.Gateway)
+	_gw, _, _ := net.ParseCIDR(gwIP)
 	_, _podIP, _ := net.ParseCIDR(resp.Ip)
 	result := &current.Result{
 		CNIVersion: pluginConfig.CNIVersion,
