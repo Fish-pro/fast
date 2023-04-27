@@ -4,6 +4,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+FAST_GO_PACKAGE="github.com/fast-io/fast"
+
+FAST_TARGET_SOURCE=(
+  controller-manager=cmd/controller-manager
+  agent=cmd/agent
+  cni=cmd/cni
+)
+
 # This script holds common bash variables and utility functions.
 
 # This function installs a Go tools by 'go install' command.
@@ -19,3 +27,37 @@ function util::install_tools() {
 	export PATH=$PATH:$GOPATH/bin
 }
 
+function util:host_platform() {
+  echo "$(go env GOHOSTOS)/$(go env GOHOSTARCH)"
+}
+
+function util::get_target_source() {
+  local target=$1
+  for s in "${FAST_TARGET_SOURCE[@]}"; do
+    if [[ "$s" == ${target}=* ]]; then
+      echo "${s##${target}=}"
+      return
+    fi
+  done
+}
+
+function util::version_ldflags() {
+  # Git information
+  GIT_VERSION=$(util::get_version)
+  GIT_COMMIT_HASH=$(git rev-parse HEAD)
+  if git_status=$(git status --porcelain 2>/dev/null) && [[ -z ${git_status} ]]; then
+    GIT_TREESTATE="clean"
+  else
+    GIT_TREESTATE="dirty"
+  fi
+  BUILDDATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+  LDFLAGS="-X github.com/fast-io/fast/pkg/version.gitVersion=${GIT_VERSION} \
+                        -X github.com/fast-io/fast/pkg/version.gitCommit=${GIT_COMMIT_HASH} \
+                        -X github.com/fast-io/fast/pkg/version.gitTreeState=${GIT_TREESTATE} \
+                        -X github.com/fast-io/fast/pkg/version.buildDate=${BUILDDATE}"
+  echo $LDFLAGS
+}
+
+function util::get_version() {
+  git describe --tags --dirty
+}
