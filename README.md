@@ -4,8 +4,7 @@ Fast is a Kubernetes CNI based on  [eBPF](https://ebpf.io)  implementation
 
 ## Architecture
 
-![fas
-t](images/fast.png)
+![fast](images/fast.png)
 
 Components:
 + fast-cni
