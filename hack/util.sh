@@ -7,9 +7,9 @@ set -o pipefail
 FAST_GO_PACKAGE="github.com/fast-io/fast"
 
 FAST_TARGET_SOURCE=(
-  controller-manager=cmd/controller-manager
-  agent=cmd/agent
-  cni=cmd/cni
+  fast-controller-manager=cmd/controller-manager
+  fast-agent=cmd/agent
+  fast=cmd/fast
 )
 
 # This script holds common bash variables and utility functions.

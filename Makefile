@@ -1,10 +1,10 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
-TARGETS := controller-manager \
-			agent
+TARGETS := fast-controller-manager \
+			fast-agent
 
-CTL_TARGETS := cni
+CTL_TARGETS := fast
 
 CMD_TARGET=$(TARGETS) $(CTL_TARGETS)
 
