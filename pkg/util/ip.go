@@ -65,8 +65,7 @@ func ParseIPRange(ipRange string) []net.IP {
 }
 
 func ExcludeIPs(allIps []string, excludeIps []string) []net.IP {
-	var resIps []net.IP
-
+	resIps := make([]net.IP, 0)
 	excludeIpSet := sets.NewString(excludeIps...)
 	for _, ip := range allIps {
 		if excludeIpSet.Has(ip) {

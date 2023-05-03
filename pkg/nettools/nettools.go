@@ -13,7 +13,7 @@ func RandomVethName() (string, error) {
 	entropy := make([]byte, 4)
 	_, err := rand.Read(entropy)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate random veth name: %v", err)
+		return "", fmt.Errorf("failed to generate random veth name: %w", err)
 	}
 
 	// NetworkManager (recent versions) will ignore veth devices that start with "veth"
@@ -106,7 +106,7 @@ func CreateVxlanAndUp(name string) (*netlink.Vxlan, error) {
 		return nil, fmt.Errorf("found the device %q but it's not a vxlan", name)
 	}
 	if err = netlink.LinkSetUp(vxlan); err != nil {
-		return nil, fmt.Errorf("set up vxlan %q error, err: %v", name, err)
+		return nil, fmt.Errorf("set up vxlan %q error, err: %w", name, err)
 	}
 	return vxlan, nil
 }

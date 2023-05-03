@@ -144,7 +144,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	var server *grpc.Server
 	var opts []grpc.ServerOption
 	server = grpc.NewServer(opts...)
-	listen, err := net.Listen("tcp", ":"+"8999")
+	listen, err := net.Listen("tcp", ":"+c.GRPCPort)
 	if err != nil {
 		logger.Error(err, "gRPC listen error")
 		return err

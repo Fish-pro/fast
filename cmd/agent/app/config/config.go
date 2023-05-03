@@ -32,6 +32,9 @@ type Config struct {
 
 	EventBroadcaster record.EventBroadcaster
 	EventRecorder    record.EventRecorder
+
+	// the GRPCPort define the server port
+	GRPCPort string
 }
 
 type completedConfig struct {

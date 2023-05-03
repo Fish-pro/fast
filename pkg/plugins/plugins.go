@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"os"
 	"runtime"
 	"time"
 
@@ -167,7 +166,7 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 	nsVethIndex := uint32(nsVeth.Attrs().Index)
 	nsVethMac := stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr))
 
-	bpfMap := bpfmap.GetLocalDevMap()
+	bpfMap := bpfmap.GetLocalPodIpsMap()
 
 	return bpfMap.Update(
 		bpfmap.LocalIpsMapKey{IP: nsVethPodIp},
@@ -246,7 +245,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		err := fmt.Errorf("failed to load CNI ENV args: %v", err)
+		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
 		logger.WithError(err).Error("get k8s arg error")
 		return err
 	}
@@ -299,20 +298,9 @@ func cmdAdd(args *skel.CmdArgs) error {
 		"ip":        resp.Ip,
 	}).Info("allocate ip successfully")
 
-	hostName, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-
 	gwIP := pluginConfig.Gateway
 	if len(gwIP) == 0 {
-		gwResp, err := agentClient.GetGateway(ctx, &ipamapiv1.GatewayRequest{
-			Node: hostName,
-		})
-		if err != nil {
-			return err
-		}
-		gwIP = gwResp.Gateway
+		return fmt.Errorf("failed to get gatewa ip, please setting for node")
 	}
 
 	// create or get veth_host and veth_net
@@ -471,5 +459,5 @@ func cmdCheck(args *skel.CmdArgs) error {
 }
 
 func Main() {
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, bv.BuildString("fastcni"))
+	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, bv.BuildString("fast"))
 }

@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fast
+  labels:
+    app: fast
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: fast-agent
+    namespace: fast-system
+  - kind: ServiceAccount
+    name: fast-controller-manager
+    namespace: fast-system

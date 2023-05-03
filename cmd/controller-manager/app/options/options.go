@@ -100,6 +100,9 @@ func (o *ControllerManagerOptions) Config() (*config.Config, error) {
 	}
 
 	o.Metrics.Apply()
+	if err := o.ApplyTo(c); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
@@ -119,4 +122,20 @@ func (o *ControllerManagerOptions) Flags(allControllers []string, disabledByDefa
 	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 
 	return fss
+}
+
+// ApplyTo fills up controller manager config with options.
+func (o ControllerManagerOptions) ApplyTo(c *config.Config) error {
+	if err := o.Generic.ApplyTo(&c.ComponentConfig.Generic); err != nil {
+		return err
+	}
+	if o.SecureServing.BindPort != 0 || o.SecureServing.Listener != nil {
+		if err := o.Authentication.ApplyTo(&c.Authentication, c.SecureServing, nil); err != nil {
+			return err
+		}
+		if err := o.Authorization.ApplyTo(&c.Authorization); err != nil {
+			return err
+		}
+	}
+	return nil
 }

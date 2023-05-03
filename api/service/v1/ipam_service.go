@@ -96,11 +96,3 @@ func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateReques
 
 	return nil, s.ipsManager.ReleaseIP(ctx, pod)
 }
-
-func (s *IPAMService) GetGateway(ctx context.Context, req *ipamapiv1.GatewayRequest) (*ipamapiv1.GatewayResponse, error) {
-	gwIP, err := s.ipsManager.GetGateway(ctx, req.Node)
-	if err != nil {
-		return nil, err
-	}
-	return &ipamapiv1.GatewayResponse{Gateway: gwIP.String()}, nil
-}

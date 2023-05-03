@@ -27,10 +27,6 @@ type FakeSampleV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeSampleV1alpha1) Gateways() v1alpha1.GatewayInterface {
-	return &FakeGateways{c}
-}
-
 func (c *FakeSampleV1alpha1) IpEndpoints(namespace string) v1alpha1.IpEndpointInterface {
 	return &FakeIpEndpoints{c, namespace}
 }

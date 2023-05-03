@@ -182,6 +182,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 		}
 
 		controllerContext.InformerFactory.Start(stopCh)
+		controllerContext.IpsInformerFactory.Start(stopCh)
 		close(controllerContext.InformersStarted)
 
 		<-ctx.Done()
@@ -354,7 +355,7 @@ func GetAvailableResources(clientBuilder clientbuilder.IpsControllerClientBuilde
 	discoveryClient := client.Discovery()
 	_, resourceMap, err := discoveryClient.ServerGroupsAndResources()
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("unable to get all supported resources from server: %v", err))
+		utilruntime.HandleError(fmt.Errorf("unable to get all supported resources from server: %w", err))
 	}
 	if len(resourceMap) == 0 {
 		return nil, fmt.Errorf("unable to get any supported resources from server")
@@ -380,11 +381,12 @@ func GetAvailableResources(clientBuilder clientbuilder.IpsControllerClientBuilde
 func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, rootClientBuilder, clientBuilder clientbuilder.IpsControllerClientBuilder, stop <-chan struct{}) (ControllerContext, error) {
 	versionedClient := rootClientBuilder.ClientOrDie("shared-informers")
 	sharedInformers := informers.NewSharedInformerFactory(versionedClient, ResyncPeriod(s)())
+	ipsInformer := ipsinformers.NewSharedInformerFactory(clientBuilder.IpsClientOrDie("fast-controller-manager"), ResyncPeriod(s)())
 
 	// If apiserver is not running we should wait for some time and fail only then. This is particularly
 	// important when we start apiserver and controller manager at the same time.
 	if err := genericcontrollermanager.WaitForAPIServer(versionedClient, 10*time.Second); err != nil {
-		return ControllerContext{}, fmt.Errorf("failed to wait for apiserver being healthy: %v", err)
+		return ControllerContext{}, fmt.Errorf("failed to wait for apiserver being healthy: %w", err)
 	}
 
 	// Use a discovery client capable of being refreshed.
@@ -403,6 +405,7 @@ func CreateControllerContext(logger klog.Logger, s *config.CompletedConfig, root
 	ctx := ControllerContext{
 		ClientBuilder:            clientBuilder,
 		InformerFactory:          sharedInformers,
+		IpsInformerFactory:       ipsInformer,
 		ComponentConfig:          s.ComponentConfig,
 		RESTMapper:               restMapper,
 		AvailableResources:       availableResources,
@@ -546,7 +549,6 @@ func startGcManagerController(ctx context.Context, controllerContext ControllerC
 		controllerContext.ClientBuilder.ClientOrDie("fast-controller-manager"),
 		controllerContext.ClientBuilder.IpsClientOrDie("fast-controller-manager"),
 		controllerContext.InformerFactory.Core().V1().Pods(),
-		controllerContext.IpsInformerFactory.Sample().V1alpha1().Ipses(),
 	)
 	if err != nil {
 		return nil, false, err

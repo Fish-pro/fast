@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	LocalDev      = "/sys/fs/bpf/tc/globals/fast_lxc"
-	LocalPodIps   = "/sys/fs/bpf/tc/globals/fast_local"
-	ClusterPodIps = "/sys/fs/bpf/tc/globals/fast_cluster"
+	LocalDev      = "/sys/fs/bpf/local_dev"
+	LocalPodIps   = "/sys/fs/bpf/local_pod_ips"
+	ClusterPodIps = "/sys/fs/bpf/cluster_pod_ips"
 )
 
 var (
@@ -22,15 +22,15 @@ func InitLoadPinnedMap() error {
 	var err error
 	localPodIpsMap, err = ebpf.LoadPinnedMap(LocalPodIps, &ebpf.LoadPinOptions{})
 	if err != nil {
-		return fmt.Errorf("load map error: %v", err)
+		return fmt.Errorf("load map error: %w", err)
 	}
 	clusterPodIpsMap, err = ebpf.LoadPinnedMap(ClusterPodIps, &ebpf.LoadPinOptions{})
 	if err != nil {
-		return fmt.Errorf("load map error: %v", err)
+		return fmt.Errorf("load map error: %w", err)
 	}
 	localDevMap, err = ebpf.LoadPinnedMap(LocalDev, &ebpf.LoadPinOptions{})
 	if err != nil {
-		return fmt.Errorf("load map error: %v", err)
+		return fmt.Errorf("load map error: %w", err)
 	}
 	return nil
 }
