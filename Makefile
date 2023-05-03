@@ -1,5 +1,7 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
+VERSION = "latest"
+REGISTRY = "fishpro3/fast"
 
 TARGETS := fast-controller-manager \
 			fast-agent

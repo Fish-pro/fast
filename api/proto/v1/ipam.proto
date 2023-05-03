@@ -49,9 +49,4 @@ service ipService{
       get:"/v1/health"
     };
   }
-  rpc GetGateway(GatewayRequest) returns (GatewayResponse){
-    option(google.api.http) = {
-      post:"/v1/gateway"
-    };
-  }
 }

@@ -21,7 +21,6 @@ import (
 
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 	"github.com/fast-io/fast/pkg/generated/clientset/versioned/scheme"
-	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions/ips/v1alpha1"
 	"github.com/fast-io/fast/pkg/ipsmanager"
 )
 
@@ -65,8 +64,7 @@ func NewController(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	client ipsversioned.Interface,
-	podInformer coreinformers.PodInformer,
-	ipsInformer ipsinformers.IpsInformer) (*Controller, error) {
+	podInformer coreinformers.PodInformer) (*Controller, error) {
 	logger := klog.FromContext(ctx)
 
 	logger.V(4).Info("Creating event broadcaster")

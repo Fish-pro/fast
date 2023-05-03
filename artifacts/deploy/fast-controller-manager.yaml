@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fast-controller-manager
+  namespace: fast-system
+  labels:
+    app: fast
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fast-controller-manager
+  template:
+    metadata:
+      labels:
+        app: fast-controller-manager
+    spec:
+      hostNetwork: true
+      containers:
+        - name: fast-controller-manager
+          image: fishpro3/fast/fast-controller-manager:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/fast-controller-manager
+            - --controllers=*
+            - --leader-elect=true
+            - --v=4
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 300m
+              memory: 200Mi
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      serviceAccount: fast-controller-manager
+      serviceAccountName: fast-controller-manager

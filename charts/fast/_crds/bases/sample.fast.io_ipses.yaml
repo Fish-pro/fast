@@ -5,13 +5,13 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: ips.sample.fast.io
+  name: ipses.sample.fast.io
 spec:
   group: sample.fast.io
   names:
     kind: Ips
     listKind: IpsList
-    plural: ips
+    plural: ipses
     singular: ips
   scope: Cluster
   versions:

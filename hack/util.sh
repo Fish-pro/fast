@@ -61,3 +61,22 @@ function util::version_ldflags() {
 function util::get_version() {
   git describe --tags --dirty
 }
+
+function util::wait_pod_ready() {
+    local context_name=$1
+    local pod_label=$2
+    local pod_namespace=$3
+
+    echo "wait the $pod_label ready..."
+    set +e
+    util::kubectl_with_retry --context="$context_name" wait --for=condition=Ready --timeout=30s pods -l app=${pod_label} -n ${pod_namespace}
+    ret=$?
+    set -e
+    if [ $ret -ne 0 ];then
+      echo "kubectl describe info:"
+      kubectl --context="$context_name" describe pod -l app=${pod_label} -n ${pod_namespace}
+      echo "kubectl logs info:"
+      kubectl --context="$context_name" logs -l app=${pod_label} -n ${pod_namespace}
+    fi
+    return ${ret}
+}

@@ -20,9 +20,8 @@ import (
 )
 
 const (
-	IpsPodAnnotation   = "fast.io/ips"
-	DefaultIpsName     = "default-ips"
-	DefaultGatewayName = "default-gateway"
+	IpsPodAnnotation = "fast.io/ips"
+	DefaultIpsName   = "default-ips"
 )
 
 type IpsManager interface {
@@ -30,7 +29,6 @@ type IpsManager interface {
 	ReleaseIP(ctx context.Context, pod *corev1.Pod) error
 	UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error
 	CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
-	GetGateway(ctx context.Context, node string) (net.IP, error)
 	NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error)
 }
 
@@ -55,10 +53,11 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alp
 		return nil, nil, fmt.Errorf("ips %s/%s not enough ip addresses to allocate", ips.Namespace, ips.Name)
 	}
 
-	var excludeIps []string
+	excludeIps := make([]string, 0)
 	for k := range ips.Status.AllocatedIPs {
 		excludeIps = append(excludeIps, k)
 	}
+
 	canAllocateIps := util.ExcludeIPs(ips.Spec.IPs, excludeIps)
 	if len(canAllocateIps) == 0 {
 		return nil, nil, fmt.Errorf("ips %s/%s not enough ip addresses to allocate", ips.Namespace, ips.Name)
@@ -138,23 +137,6 @@ func (c *ipsManager) CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1al
 		return err
 	}
 	return nil
-}
-
-func (c *ipsManager) GetGateway(ctx context.Context, node string) (net.IP, error) {
-	gw, err := c.client.SampleV1alpha1().Gateways().Get(ctx, DefaultGatewayName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	if len(gw.Spec.NodeGateways) == 0 {
-		return nil, fmt.Errorf("default gateway not setting node gateway")
-	}
-	for _, ng := range gw.Spec.NodeGateways {
-		if ng.Node != node {
-			continue
-		}
-		return net.ParseIP(ng.Gateway), nil
-	}
-	return nil, fmt.Errorf("can not found default gateway for node %s", node)
 }
 
 func (c *ipsManager) NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error) {

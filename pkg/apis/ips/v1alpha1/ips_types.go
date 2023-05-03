@@ -6,7 +6,7 @@ import (
 
 // +genclient
 // +genclient:nonNamespaced
-// +kubebuilder:resource:scope="Cluster"
+// +kubebuilder:resource:scope="Cluster",singular="ips",path="ipses"
 // +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

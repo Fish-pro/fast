@@ -42,6 +42,8 @@ type AgentOptions struct {
 
 	Master     string
 	Kubeconfig string
+
+	GRPCPort string
 }
 
 // NewAgentOptions return all options of controller
@@ -71,6 +73,7 @@ func (o *AgentOptions) Config() (*config.Config, error) {
 		Kubeconfig:       kubeconfig,
 		EventBroadcaster: eventBroadcaster,
 		EventRecorder:    eventRecorder,
+		GRPCPort:         o.GRPCPort,
 	}
 
 	o.Metrics.Apply()
@@ -88,6 +91,7 @@ func (o *AgentOptions) Flags() cliflag.NamedFlagSets {
 	fs := fss.FlagSet("misc")
 	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
 	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
+	fs.StringVar(&o.GRPCPort, "grpc-port", "8999", "The grpc-port define the grpc server port")
 
 	return fss
 }

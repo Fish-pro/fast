@@ -49,8 +49,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&IpsList{},
 		&IpEndpoint{},
 		&IpEndpointList{},
-		&Gateway{},
-		&GatewayList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
