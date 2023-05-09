@@ -34,8 +34,6 @@ import (
 	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/metrics/features"
 	"k8s.io/component-base/term"
-	"k8s.io/component-base/version"
-	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
 
 	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
@@ -46,6 +44,7 @@ import (
 	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
+	"github.com/fast-io/fast/pkg/version"
 )
 
 func init() {
@@ -61,7 +60,6 @@ func NewAgentCommand() *cobra.Command {
 		Use:  "fast-agent",
 		Long: `The fast-agent is an agent component`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			verflag.PrintAndExitIfRequested()
 			// Activate logging as soon as possible, after that
 			// show flags with the final logging configuration.
 			if err := logsapi.ValidateAndApply(o.Logs, utilfeature.DefaultFeatureGate); err != nil {
@@ -89,7 +87,6 @@ func NewAgentCommand() *cobra.Command {
 
 	fs := cmd.Flags()
 	namedFlagSets := o.Flags()
-	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), cmd.Name())
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
