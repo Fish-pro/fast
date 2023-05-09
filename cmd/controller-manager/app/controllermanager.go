@@ -31,8 +31,6 @@ import (
 	controllersmetrics "k8s.io/component-base/metrics/prometheus/controllers"
 	"k8s.io/component-base/metrics/prometheus/slis"
 	"k8s.io/component-base/term"
-	"k8s.io/component-base/version"
-	"k8s.io/component-base/version/verflag"
 	genericcontrollermanager "k8s.io/controller-manager/app"
 	"k8s.io/controller-manager/controller"
 	controllerhealthz "k8s.io/controller-manager/pkg/healthz"
@@ -46,6 +44,7 @@ import (
 	gcctrl "github.com/fast-io/fast/pkg/controllers/gc"
 	ipsctrl "github.com/fast-io/fast/pkg/controllers/ips"
 	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
+	"github.com/fast-io/fast/pkg/version"
 )
 
 func init() {
@@ -72,7 +71,6 @@ func NewControllerManagerCommand() *cobra.Command {
 		Use:  "fast-controller-manger",
 		Long: `The fast-controller-manger is an controller manager`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			verflag.PrintAndExitIfRequested()
 			// Activate logging as soon as possible, after that
 			// show flags with the final logging configuration.
 			if err := logsapi.ValidateAndApply(o.Logs, utilfeature.DefaultFeatureGate); err != nil {
@@ -100,7 +98,6 @@ func NewControllerManagerCommand() *cobra.Command {
 
 	fs := cmd.Flags()
 	namedFlagSets := o.Flags(KnownControllers(), ControllersDisabledByDefault.List())
-	verflag.AddFlags(namedFlagSets.FlagSet("global"))
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), cmd.Name())
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
