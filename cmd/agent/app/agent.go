@@ -25,6 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kubeinformers "k8s.io/client-go/informers"
@@ -43,7 +46,6 @@ import (
 	"github.com/fast-io/fast/cmd/agent/app/options"
 	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
-	ipsinformers "github.com/fast-io/fast/pkg/generated/informers/externalversions"
 	"github.com/fast-io/fast/pkg/version"
 )
 
@@ -118,7 +120,6 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	defer c.EventBroadcaster.Shutdown()
 
 	clientBuilder := clientbuilder.NewSimpleIpsControllerClientBuilder(c.Kubeconfig)
-	ipsManager := clientBuilder.IpsClientOrDie("ips-manager")
 
 	// 1.create map and attach eBPF programs
 	if err := bpfmap.InitLoadPinnedMap(); err != nil {
@@ -127,8 +128,6 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 
 	// new normal informer factory
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c.Client, time.Second*30)
-	// new ips informer factory
-	ipsInformerFactory := ipsinformers.NewSharedInformerFactory(ipsManager, time.Second*30)
 
 	// 2.Obtain the cluster pod IP and store the information to the cluster eBPF map
 	controller, err := clusterpodctrl.NewController(
@@ -142,9 +141,25 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	go controller.Run(ctx)
 
 	// 3.start grpc server
-	var server *grpc.Server
-	var opts []grpc.ServerOption
-	server = grpc.NewServer(opts...)
+	var interceptor grpc.UnaryServerInterceptor
+	interceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return req, fmt.Errorf("missing authoration informationn")
+		}
+		var user, password string
+		if len(md.Get("user")) > 0 {
+			user = md.Get("user")[0]
+		}
+		if len(md.Get("password")) > 0 {
+			password = md.Get("password")[0]
+		}
+		if user != c.GRPCUser || password != c.GRPCPassword {
+			return req, status.Error(codes.Unauthenticated, "token invalid")
+		}
+		return handler(ctx, req)
+	}
+	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 	listen, err := net.Listen("tcp", ":"+c.GRPCPort)
 	if err != nil {
 		logger.Error(err, "gRPC listen error")
@@ -166,7 +181,6 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	}()
 
 	kubeInformerFactory.Start(stopCh)
-	ipsInformerFactory.Start(stopCh)
 
 	<-stopCh
 	return nil

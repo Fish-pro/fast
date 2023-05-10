@@ -52,6 +52,18 @@ func loadConfig(bytes []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
+func newAgentClient(target, user, password string) (ipamapiv1.IpServiceClient, *grpc.ClientConn, error) {
+	conn, err := grpc.Dial(target, grpc.WithPerRPCCredentials(&Authorization{User: user, Password: password}))
+	if err != nil {
+		return nil, nil, err
+	}
+	return ipamapiv1.NewIpServiceClient(conn), conn, nil
+}
+
+func isHealthy(health ipamapiv1.HealthyType) bool {
+	return health == ipamapiv1.HealthyType_Healthy
+}
+
 func createHostVethPair() (*netlink.Veth, *netlink.Veth, error) {
 	hostVeth, _ := netlink.LinkByName(VethHostName)
 	netVeth, _ := netlink.LinkByName(VethNetName)
@@ -262,14 +274,13 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	conn, err := grpc.Dial(":8999")
+	agentClient, conn, err := newAgentClient(":8999", "admin", "admin")
 	if err != nil {
-		logger.WithError(err).Error("failed to connect server")
+		logger.WithError(err).Error("failed to new agent client")
 		return err
 	}
 	defer conn.Close()
 
-	agentClient := ipamapiv1.NewIpServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -277,7 +288,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if err != nil {
 		return err
 	}
-	if !util.IsHealthy(hresp) {
+	if !isHealthy(hresp.Health) {
 		return fmt.Errorf("ipam svervice is unhealthy")
 	}
 
@@ -416,14 +427,14 @@ func cmdDel(args *skel.CmdArgs) error {
 		"Path":        args.Path,
 		"StdinData":   string(args.StdinData),
 	}).Info("DEL")
-	conn, err := grpc.Dial(":8999")
+
+	agentClient, conn, err := newAgentClient(":8999", "admin", "admin")
 	if err != nil {
-		logger.WithError(err).Error("failed to connect grpc server")
+		logger.WithError(err).Error("failed to new agent client")
 		return err
 	}
 	defer conn.Close()
 
-	agentClient := ipamapiv1.NewIpServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -432,7 +443,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if !util.IsHealthy(hresp) {
+	if !isHealthy(hresp.Health) {
 		return fmt.Errorf("ipam svervice is unhealthy")
 	}
 

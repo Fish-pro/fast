@@ -45,10 +45,12 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alp
 	if len(ipsName) == 0 {
 		ipsName = DefaultIpsName
 	}
-	ips, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
+	obj, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
+	ips := obj.DeepCopy()
+
 	if ips.Status.AllocatedIPCount >= ips.Status.TotalIPCount {
 		return nil, nil, fmt.Errorf("ips %s/%s not enough ip addresses to allocate", ips.Namespace, ips.Name)
 	}
@@ -64,16 +66,15 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alp
 	}
 	ip := net.ParseIP(canAllocateIps[0].String())
 
-	nowStatus := ips.Status
-	if nowStatus.AllocatedIPs == nil {
-		nowStatus.AllocatedIPs = make(map[string]ipsv1alpha1.AllocatedPod)
+	if ips.Status.AllocatedIPs == nil {
+		ips.Status.AllocatedIPs = make(map[string]ipsv1alpha1.AllocatedPod)
 	}
-	nowStatus.AllocatedIPs[ip.String()] = ipsv1alpha1.AllocatedPod{
+	ips.Status.AllocatedIPs[ip.String()] = ipsv1alpha1.AllocatedPod{
 		Pod:    fmt.Sprintf("%s/%s", pod.Namespace, pod.Name),
 		PodUid: string(pod.UID),
 	}
 
-	if err := c.UpdateIpsStatus(ctx, ips, nowStatus); err != nil {
+	if err := c.UpdateIpsStatus(ctx, obj, ips.Status); err != nil {
 		return nil, nil, err
 	}
 	return ips, ip, nil
@@ -84,20 +85,18 @@ func (c *ipsManager) ReleaseIP(ctx context.Context, pod *corev1.Pod) error {
 	if len(ipsName) == 0 {
 		ipsName = DefaultIpsName
 	}
-	ips, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
+	obj, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
+	ips := obj.DeepCopy()
+
 	if ips == nil || ips.Status.AllocatedIPs == nil || len(ips.Status.AllocatedIPs) == 0 {
 		return nil
 	}
+	delete(ips.Status.AllocatedIPs, pod.Status.PodIP)
 
-	nowStatus := ips.Status
-	delete(nowStatus.AllocatedIPs, pod.Status.PodIP)
-	if nowStatus.AllocatedIPCount > 0 {
-		nowStatus.AllocatedIPCount--
-	}
-	return c.UpdateIpsStatus(ctx, ips, nowStatus)
+	return c.UpdateIpsStatus(ctx, obj, ips.Status)
 }
 
 func (c *ipsManager) UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error {

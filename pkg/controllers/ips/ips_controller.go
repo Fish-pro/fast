@@ -207,11 +207,10 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	for _, ip := range ips.Spec.IPs {
 		count += len(util.ParseIPRange(ip))
 	}
-	nowStatus := ipsv1alpha1.IpsStatus{}
-	nowStatus.TotalIPCount = count
-	nowStatus.AllocatedIPCount = len(nowStatus.AllocatedIPs)
+	ips.Status.TotalIPCount = count
+	ips.Status.AllocatedIPCount = len(ips.Status.AllocatedIPs)
 
-	return c.updateIpsStatusIfNeed(ctx, ips, nowStatus)
+	return c.updateIpsStatusIfNeed(ctx, obj, ips.Status)
 }
 
 // updateIpsStatusIfNeed update status if we need
