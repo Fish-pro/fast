@@ -35,6 +35,9 @@ type Config struct {
 
 	// the GRPCPort define the server port
 	GRPCPort string
+
+	GRPCUser     string
+	GRPCPassword string
 }
 
 type completedConfig struct {

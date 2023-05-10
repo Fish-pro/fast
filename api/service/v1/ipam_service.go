@@ -51,7 +51,7 @@ func NewIPAMService(
 }
 
 func (s *IPAMService) Health(context.Context, *ipamapiv1.HealthRequest) (*ipamapiv1.HealthResponse, error) {
-	return &ipamapiv1.HealthResponse{Msg: util.HealthyOk}, nil
+	return &ipamapiv1.HealthResponse{Health: ipamapiv1.HealthyType_Healthy}, nil
 }
 
 func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateRequest) (*ipamapiv1.AllocateResponse, error) {

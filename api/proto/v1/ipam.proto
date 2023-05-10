@@ -1,12 +1,16 @@
 syntax = "proto3";
 package v1;
 option go_package = ".;proto_v1";
-import "google/api/annotations.proto";
 
 message HealthRequest{}
 
+enum HealthyType {
+  Healthy=0;
+  Unhealthy=1;
+}
+
 message HealthResponse{
-  string msg=1;
+  HealthyType Health=1;
 }
 
 message AllocateRequest{
@@ -32,21 +36,7 @@ message GatewayResponse{
 }
 
 service ipService{
-  rpc Allocate(AllocateRequest) returns (AllocateResponse){
-    option(google.api.http) = {
-      post:"/v1/ipam"
-      body:"*"
-    };
-  }
-  rpc Release(AllocateRequest) returns (ReleaseResponse){
-    option(google.api.http) = {
-      delete:"/v1/ipam"
-      body:"*"
-    };
-  }
-  rpc Health(HealthRequest) returns (HealthResponse){
-    option(google.api.http) = {
-      get:"/v1/health"
-    };
-  }
+  rpc Allocate(AllocateRequest) returns (AllocateResponse){}
+  rpc Release(AllocateRequest) returns (ReleaseResponse){}
+  rpc Health(HealthRequest) returns (HealthResponse){}
 }
