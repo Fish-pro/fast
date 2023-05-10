@@ -38,6 +38,11 @@ function build_images() {
   local -r output_type=${OUTPUT_TYPE:-docker}
   local platforms="${BUILD_PLATFORMS:-"$(util:host_platform)"}"
 
+  if [[ "$target" == "fast-agent" ]]; then
+    build_agent_image "${output_type}" "${target}" "${platforms}"
+    return
+  fi
+
   # Preferentially use `docker build`. If we are building multi platform,
   # or cross building, change to `docker buildx build`
   cross=$(isCross "${platforms}")
@@ -45,6 +50,26 @@ function build_images() {
     build_cross_image "${output_type}" "${target}" "${platforms}"
   else
     build_local_image "${output_type}" "${target}" "${platforms}"
+  fi
+}
+
+function build_agent_image() {
+  local -r output_type=$1
+  local -r target=$2
+  local -r platform=$3
+
+  local -r image_name="${REGISTRY}/${target}:${VERSION}"
+
+  echo "Building image for ${platform}: ${image_name}"
+  set -x
+  docker build ${DOCKER_BUILD_ARGS} \
+          --tag "${image_name}" \
+          --file "${REPO_ROOT}/build/images/agent.Dockerfile" \
+          "${REPO_ROOT}"
+  set +x
+
+  if [[ "$output_type" == "registry" ]]; then
+    docker push "${image_name}"
   fi
 }
 

@@ -34,3 +34,6 @@ codegen:
 
 crdgen:
 	hack/update-crdgen.sh
+
+load:
+	make -C bpf load

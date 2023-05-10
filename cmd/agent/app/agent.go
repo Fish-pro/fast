@@ -60,6 +60,10 @@ func NewAgentCommand() *cobra.Command {
 		Use:  "fast-agent",
 		Long: `The fast-agent is an agent component`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// load bpf map
+			if err := bpfmap.LoadBpfMap(); err != nil {
+				return fmt.Errorf("failed to load ebpf map: %v", err)
+			}
 			// Activate logging as soon as possible, after that
 			// show flags with the final logging configuration.
 			if err := logsapi.ValidateAndApply(o.Logs, utilfeature.DefaultFeatureGate); err != nil {
