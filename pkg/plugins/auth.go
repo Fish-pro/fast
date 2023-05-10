@@ -2,6 +2,11 @@ package plugins
 
 import "context"
 
+const (
+	DefaultUser     = "admin"
+	DefaultPassword = "admin"
+)
+
 type Authorization struct {
 	User     string
 	Password string
