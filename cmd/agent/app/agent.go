@@ -145,7 +145,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	interceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			return req, fmt.Errorf("missing authoration informationn")
+			return nil, fmt.Errorf("missing authoration informationn")
 		}
 		var user, password string
 		if len(md.Get("user")) > 0 {
@@ -155,7 +155,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 			password = md.Get("password")[0]
 		}
 		if user != c.GRPCUser || password != c.GRPCPassword {
-			return req, status.Error(codes.Unauthenticated, "token invalid")
+			return nil, status.Error(codes.Unauthenticated, "token invalid")
 		}
 		return handler(ctx, req)
 	}

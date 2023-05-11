@@ -274,7 +274,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	agentClient, conn, err := newAgentClient(":8999", "admin", "admin")
+	agentClient, conn, err := newAgentClient(":8999", DefaultUser, DefaultPassword)
 	if err != nil {
 		logger.WithError(err).Error("failed to new agent client")
 		return err
@@ -428,7 +428,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		"StdinData":   string(args.StdinData),
 	}).Info("DEL")
 
-	agentClient, conn, err := newAgentClient(":8999", "admin", "admin")
+	agentClient, conn, err := newAgentClient(":8999", DefaultUser, DefaultPassword)
 	if err != nil {
 		logger.WithError(err).Error("failed to new agent client")
 		return err
