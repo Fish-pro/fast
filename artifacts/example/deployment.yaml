@@ -27,6 +27,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
+  annotations:
+    fast.io/ips: sample-ips
 spec:
   replicas: 2
   selector:

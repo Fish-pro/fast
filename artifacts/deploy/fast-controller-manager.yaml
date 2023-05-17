@@ -24,7 +24,7 @@ spec:
             - /bin/fast-controller-manager
             - --controllers=*
             - --leader-elect=true
-            - --v=4
+            - --v=6
           resources:
             requests:
               cpu: 100m

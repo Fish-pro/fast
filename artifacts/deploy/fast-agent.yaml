@@ -24,8 +24,13 @@ spec:
           imagePullPolicy: IfNotPresent
           name: fast-agent
           command:
-            - /bin/fast-agent
-            - --v=4
+            - /app/fast-agent
+            - --v=6
+          ports:
+            - containerPort: 50051
+              hostPort: 50051
+              name: agent
+              protocol: TCP
           env:
             - name: NODE_NAME
               valueFrom:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -19,6 +20,7 @@ import (
 
 type IPAMService struct {
 	client ipsversioned.Interface
+	logger *zap.Logger
 
 	podLister corelisters.PodLister
 	podSynced cache.InformerSynced
@@ -31,10 +33,12 @@ type IPAMService struct {
 func NewIPAMService(
 	ctx context.Context,
 	client ipsversioned.Interface,
-	podInformer coreinformers.PodInformer) ipamapiv1.IpServiceServer {
+	podInformer coreinformers.PodInformer,
+	logger *zap.Logger) ipamapiv1.IpServiceServer {
 
 	ipamSvc := &IPAMService{
 		client:     client,
+		logger:     logger,
 		podLister:  podInformer.Lister(),
 		podSynced:  podInformer.Informer().HasSynced,
 		ipsManager: ipsmanager.NewIpsManager(client),
@@ -55,8 +59,14 @@ func (s *IPAMService) Health(context.Context, *ipamapiv1.HealthRequest) (*ipamap
 }
 
 func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateRequest) (*ipamapiv1.AllocateResponse, error) {
+	if len(req.Namespace) == 0 || len(req.Name) == 0 {
+		return nil, fmt.Errorf("namespace or name can not be none")
+	}
+	s.logger.Info("allocate ip", zap.String("namespace", req.Namespace), zap.String("name", req.Name))
+
 	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
 	if err != nil {
+		s.logger.Error("get pod from lister error", zap.Error(err))
 		return nil, err
 	}
 	if !util.IsPodAlive(pod) {
@@ -65,32 +75,45 @@ func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateReque
 
 	endpoint, err := s.client.SampleV1alpha1().IpEndpoints(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
+		s.logger.Error("get ip endpoint error", zap.Error(err))
 		return nil, err
 	}
-	if endpoint != nil {
+	if endpoint != nil && len(endpoint.Status.IPs.IPv4) > 0 {
+		s.logger.Info("ip endpoint exist", zap.String("ip", endpoint.Status.IPs.IPv4))
 		return &ipamapiv1.AllocateResponse{Ip: endpoint.Status.IPs.IPv4}, nil
 	}
 
 	ips, ip, err := s.ipsManager.AllocateIP(ctx, pod)
 	if err != nil {
+		s.logger.Error("failed to allocate ip", zap.Error(err))
 		return nil, err
 	}
 
 	ipep, err := s.ipsManager.NewIpEndpoint(ip.String(), pod, ips)
 	if err != nil {
+		s.logger.Error("failed to new ip endpoint", zap.Error(err))
 		return nil, err
 	}
 
-	if err := s.ipsManager.CreateOrUpdateIpEndpoint(ctx, ipep); err != nil {
+	if err := s.ipsManager.CreateIpEndpoint(ctx, ipep); err != nil {
+		s.logger.Error("failed to create or update ip endpoint", zap.Error(err))
 		return nil, err
 	}
+
+	s.logger.Info("allocate ip successfully", zap.String("ip", ip.String()))
 
 	return &ipamapiv1.AllocateResponse{Ip: ip.String()}, nil
 }
 
 func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateRequest) (*ipamapiv1.ReleaseResponse, error) {
+	if len(req.Namespace) == 0 || len(req.Name) == 0 {
+		return nil, fmt.Errorf("namespace or name can not be none")
+	}
+	s.logger.Info("release ip", zap.String("namespace", req.Namespace), zap.String("name", req.Name))
+
 	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
 	if err != nil {
+		s.logger.Error("get pod from lister error", zap.Error(err))
 		return nil, err
 	}
 
