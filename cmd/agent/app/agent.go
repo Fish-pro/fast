@@ -25,9 +25,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kubeinformers "k8s.io/client-go/informers"
@@ -46,6 +43,7 @@ import (
 	"github.com/fast-io/fast/cmd/agent/app/options"
 	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
+	grpclogger "github.com/fast-io/fast/pkg/logger"
 	"github.com/fast-io/fast/pkg/version"
 )
 
@@ -72,6 +70,8 @@ func NewAgentCommand() *cobra.Command {
 				return err
 			}
 			cliflag.PrintFlags(cmd.Flags())
+
+			grpclogger.InitLogger(o.GRPCLogLevel, o.GRPCLogTimeFormat)
 
 			c, err := o.Config()
 			if err != nil {
@@ -141,25 +141,9 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	go controller.Run(ctx)
 
 	// 3.start grpc server
-	var interceptor grpc.UnaryServerInterceptor
-	interceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, fmt.Errorf("missing authoration informationn")
-		}
-		var user, password string
-		if len(md.Get("user")) > 0 {
-			user = md.Get("user")[0]
-		}
-		if len(md.Get("password")) > 0 {
-			password = md.Get("password")[0]
-		}
-		if user != c.GRPCUser || password != c.GRPCPassword {
-			return nil, status.Error(codes.Unauthenticated, "token invalid")
-		}
-		return handler(ctx, req)
-	}
-	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
+	var opts []grpc.ServerOption
+	grpclogger.AddLogging(opts)
+	server := grpc.NewServer(opts...)
 	listen, err := net.Listen("tcp", ":"+c.GRPCPort)
 	if err != nil {
 		logger.Error(err, "gRPC listen error")
@@ -169,6 +153,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 		ctx,
 		clientBuilder.IpsClientOrDie("fast-agent"),
 		kubeInformerFactory.Core().V1().Pods(),
+		grpclogger.Log,
 	)
 	ipamapiv1.RegisterIpServiceServer(server, ipamSvc)
 

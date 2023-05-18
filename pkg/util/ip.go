@@ -64,14 +64,17 @@ func ParseIPRange(ipRange string) []net.IP {
 	return ips
 }
 
-func ExcludeIPs(allIps []string, excludeIps []string) []net.IP {
+func ExcludeIPs(allIps []net.IP, excludeIps []net.IP) []net.IP {
 	resIps := make([]net.IP, 0)
-	excludeIpSet := sets.NewString(excludeIps...)
-	for _, ip := range allIps {
-		if excludeIpSet.Has(ip) {
+	excludeIpSet := sets.NewString()
+	for _, ep := range excludeIps {
+		excludeIpSet.Insert(ep.String())
+	}
+	for _, ap := range allIps {
+		if excludeIpSet.Has(ap.String()) {
 			continue
 		}
-		resIps = append(resIps, net.ParseIP(ip).To4())
+		resIps = append(resIps, ap)
 	}
 	return resIps
 }

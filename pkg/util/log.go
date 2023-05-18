@@ -9,7 +9,7 @@ import (
 var logger = logrus.New()
 
 func NewLogger() *logrus.Logger {
-	logPath := "fast-cni.log"
+	logPath := "/tmp/fast-cni.log"
 	if val, ok := os.LookupEnv("LOG_PATH"); ok {
 		logPath = val
 	}

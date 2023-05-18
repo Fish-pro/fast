@@ -28,7 +28,7 @@ type IpsManager interface {
 	AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alpha1.Ips, net.IP, error)
 	ReleaseIP(ctx context.Context, pod *corev1.Pod) error
 	UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error
-	CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
+	CreateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
 	NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error)
 }
 
@@ -55,16 +55,24 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alp
 		return nil, nil, fmt.Errorf("ips %s/%s not enough ip addresses to allocate", ips.Namespace, ips.Name)
 	}
 
-	excludeIps := make([]string, 0)
-	for k := range ips.Status.AllocatedIPs {
-		excludeIps = append(excludeIps, k)
+	allIps := make([]net.IP, 0)
+	for _, IP := range ips.Spec.IPs {
+		allIps = append(allIps, util.ParseIPRange(IP)...)
 	}
 
-	canAllocateIps := util.ExcludeIPs(ips.Spec.IPs, excludeIps)
+	excludeIps := make([]net.IP, 0)
+	for k, v := range ips.Status.AllocatedIPs {
+		if v.PodUid == string(pod.UID) {
+			return ips, net.ParseIP(k), nil
+		}
+		excludeIps = append(excludeIps, net.ParseIP(k))
+	}
+
+	canAllocateIps := util.ExcludeIPs(allIps, excludeIps)
 	if len(canAllocateIps) == 0 {
 		return nil, nil, fmt.Errorf("ips %s/%s not enough ip addresses to allocate", ips.Namespace, ips.Name)
 	}
-	ip := net.ParseIP(canAllocateIps[0].String())
+	ip := canAllocateIps[0]
 
 	if ips.Status.AllocatedIPs == nil {
 		ips.Status.AllocatedIPs = make(map[string]ipsv1alpha1.AllocatedPod)
@@ -120,19 +128,13 @@ func (c *ipsManager) UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, 
 	return nil
 }
 
-func (c *ipsManager) CreateOrUpdateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error {
-	got, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Get(ctx, ipep.Name, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		_, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Create(ctx, ipep, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-		return nil
-	} else if err != nil {
+func (c *ipsManager) CreateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error {
+	created, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Create(ctx, ipep, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
-	ipep.SetResourceVersion(got.GetResourceVersion())
-	if _, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Update(ctx, ipep, metav1.UpdateOptions{}); err != nil {
+	ipep.SetResourceVersion(created.GetResourceVersion())
+	if _, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).UpdateStatus(ctx, ipep, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	return nil

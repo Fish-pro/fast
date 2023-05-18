@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	LocalDev      = "/sys/fs/bpf/local_dev"
-	LocalPodIps   = "/sys/fs/bpf/local_pod_ips"
-	ClusterPodIps = "/sys/fs/bpf/cluster_pod_ips"
+	LocalDev      = "/sys/fs/bpf/tc/globals/local_dev"
+	LocalPodIps   = "/sys/fs/bpf/tc/globals/local_pod_ips"
+	ClusterPodIps = "/sys/fs/bpf/tc/globals/cluster_pod_ips"
 )
 
 var (

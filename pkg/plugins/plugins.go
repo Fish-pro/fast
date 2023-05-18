@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
 	bpfmap "github.com/fast-io/fast/bpf/map"
@@ -52,8 +53,8 @@ func loadConfig(bytes []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
-func newAgentClient(target, user, password string) (ipamapiv1.IpServiceClient, *grpc.ClientConn, error) {
-	conn, err := grpc.Dial(target, grpc.WithPerRPCCredentials(&Authorization{User: user, Password: password}))
+func newAgentClient() (ipamapiv1.IpServiceClient, *grpc.ClientConn, error) {
+	conn, err := grpc.Dial(":50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -246,14 +247,12 @@ func attachTcBPFIntoVxlan(vxlan *netlink.Vxlan) error {
  */
 func cmdAdd(args *skel.CmdArgs) error {
 	logger := util.NewLogger()
-	logger.WithFields(logrus.Fields{
-		"ContainerID": args.ContainerID,
-		"NetNs":       args.Netns,
-		"IfName":      args.IfName,
-		"Args":        args.Args,
-		"Path":        args.Path,
-		"StdinData":   string(args.StdinData),
-	}).Info("ADD")
+
+	pluginConfig, err := loadConfig(args.StdinData)
+	if err != nil {
+		logger.WithError(err).Error("failed to load plugin config")
+		return err
+	}
 
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
@@ -263,18 +262,17 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	logger.WithFields(logrus.Fields{
+		"ContainerID":  args.ContainerID,
+		"NetNs":        args.Netns,
+		"IfName":       args.IfName,
+		"Args":         args.Args,
+		"Path":         args.Path,
 		"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
 		"PodName":      string(k8sArgs.K8S_POD_NAME),
 		"PodUid":       string(k8sArgs.K8S_POD_UID),
-	}).Info("get k8s args")
+	}).Info("ADD")
 
-	pluginConfig, err := loadConfig(args.StdinData)
-	if err != nil {
-		logger.WithError(err).Error("failed to load plugin config")
-		return err
-	}
-
-	agentClient, conn, err := newAgentClient(":8999", DefaultUser, DefaultPassword)
+	agentClient, conn, err := newAgentClient()
 	if err != nil {
 		logger.WithError(err).Error("failed to new agent client")
 		return err
@@ -419,16 +417,25 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 func cmdDel(args *skel.CmdArgs) error {
 	logger := util.NewLogger()
+	k8sArgs := K8sArgs{}
+	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
+		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
+		logger.WithError(err).Error("get k8s arg error")
+		return err
+	}
+
 	logger.WithFields(logrus.Fields{
-		"ContainerID": args.ContainerID,
-		"NetNs":       args.Netns,
-		"IfName":      args.IfName,
-		"Args":        args.Args,
-		"Path":        args.Path,
-		"StdinData":   string(args.StdinData),
+		"ContainerID":  args.ContainerID,
+		"NetNs":        args.Netns,
+		"IfName":       args.IfName,
+		"Args":         args.Args,
+		"Path":         args.Path,
+		"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
+		"PodName":      string(k8sArgs.K8S_POD_NAME),
+		"PodUid":       string(k8sArgs.K8S_POD_UID),
 	}).Info("DEL")
 
-	agentClient, conn, err := newAgentClient(":8999", DefaultUser, DefaultPassword)
+	agentClient, conn, err := newAgentClient()
 	if err != nil {
 		logger.WithError(err).Error("failed to new agent client")
 		return err
@@ -448,9 +455,11 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 
 	_, err = agentClient.Release(ctx, &ipamapiv1.AllocateRequest{
-		Command: "DEL",
-		Id:      args.ContainerID,
-		IfName:  args.IfName,
+		Command:   "DEL",
+		Id:        args.ContainerID,
+		IfName:    args.IfName,
+		Namespace: string(k8sArgs.K8S_POD_NAMESPACE),
+		Name:      string(k8sArgs.K8S_POD_NAME),
 	})
 
 	return err
