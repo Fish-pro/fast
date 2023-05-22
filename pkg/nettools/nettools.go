@@ -3,8 +3,10 @@ package nettools
 import (
 	"crypto/rand"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/vishvananda/netlink"
 )
@@ -109,4 +111,19 @@ func CreateVxlanAndUp(name string) (*netlink.Vxlan, error) {
 		return nil, fmt.Errorf("set up vxlan %q error, err: %w", name, err)
 	}
 	return vxlan, nil
+}
+
+func DeviceExistIp(link netlink.Link) (string, error) {
+	dev, err := net.InterfaceByIndex(link.Attrs().Index)
+	if err == nil {
+		addrs, err := dev.Addrs()
+		if err == nil && len(addrs) > 0 {
+			str := addrs[0].String()
+			tmpIp := strings.Split(str, "/")
+			if len(tmpIp) == 2 && net.ParseIP(tmpIp[0]).To4() != nil {
+				return str, nil
+			}
+		}
+	}
+	return "", nil
 }

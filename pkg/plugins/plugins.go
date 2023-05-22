@@ -83,11 +83,26 @@ func setUpVethPair(veth ...*netlink.Veth) error {
 	return nil
 }
 
-func setIPForPair(name string, ip string) error {
+func setIPForNsPair(nsPair *netlink.Veth, ip string) error {
 	ip32 := fmt.Sprintf("%s/%s", ip, "32")
 	ipAddr, ipNet, err := net.ParseCIDR(ip32)
 	ipNet.IP = ipAddr
-	link, err := netlink.LinkByName(name)
+	link, err := netlink.LinkByName(nsPair.Name)
+	if err != nil {
+		return err
+	}
+	return netlink.AddrAdd(link, &netlink.Addr{IPNet: ipNet})
+}
+
+func setIPForHostPair(gwPair *netlink.Veth, ip string) error {
+	existIp, _ := nettools.DeviceExistIp(gwPair)
+	if len(existIp) != 0 {
+		return nil
+	}
+	ip32 := fmt.Sprintf("%s/%s", ip, "32")
+	ipAddr, ipNet, err := net.ParseCIDR(ip32)
+	ipNet.IP = ipAddr
+	link, err := netlink.LinkByName(gwPair.Name)
 	if err != nil {
 		return err
 	}
@@ -326,7 +341,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	// set ip for host pair
-	if err := setIPForPair(gwPair.Name, gwIP); err != nil {
+	if err := setIPForHostPair(gwPair, gwIP); err != nil {
 		logger.WithError(err).Error("failed to set ip for host pair")
 		return err
 	}
@@ -353,7 +368,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		}
 
 		// set ip for ns pair
-		if err := setIPForPair(nsPair.Name, resp.Ip); err != nil {
+		if err := setIPForNsPair(nsPair, resp.Ip); err != nil {
 			return err
 		}
 
