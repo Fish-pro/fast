@@ -25,11 +25,7 @@ struct {
   __uint(max_entries, 255);
 	__type(key, struct localIpsMapKey);
   __type(value, struct localIpsMapInfo);
-  // 如果别的地方已经往某条路径 pin 了, 需要加上这个属性
-  // 并且 struct 的名字一定得和 bpftool map list 出来的一样
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-// 加了 SEC(".maps") 的话, clang 在编译时需要加 -g 参数用来生成调试信息
-// 这里 ding_lxc 是必须要和 bpftool map list 出来的那个 pinned 中路径的名字一样
 } ding_lxc __section_maps_btf;
 
 

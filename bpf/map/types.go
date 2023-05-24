@@ -23,8 +23,8 @@ type LocalIpsMapInfo struct {
 	IfIndex    uint32
 	LxcIfIndex uint32
 
-	MAC     [8]byte // MAC uint64
-	NodeMAC [8]byte // NodeMAC uint64
+	MAC     [8]byte
+	NodeMAC [8]byte
 }
 
 type ClusterIpsMapKey struct {
