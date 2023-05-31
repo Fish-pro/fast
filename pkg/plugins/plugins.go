@@ -188,11 +188,6 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 	if err != nil {
 		return err
 	}
-	netip, _, err := net.ParseCIDR(podIP)
-	if err != nil {
-		return err
-	}
-	podIP = netip.String()
 
 	nsVethPodIp := util.InetIpToUInt32(podIP)
 	hostVethIndex := uint32(hostVeth.Attrs().Index)
@@ -354,6 +349,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	netNs, err := ns.GetNS(args.Netns)
 	if err != nil {
+		logger.WithError(err).Error("failed to get netns")
 		return err
 	}
 
@@ -403,9 +399,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 			return err
 		}
 
-		podIP := fmt.Sprintf("%s/32", resp.Ip)
-
-		return setVethPairInfoToLocalIPsMap(hostNs, podIP, hostPair, nsPair)
+		if err := setVethPairInfoToLocalIPsMap(hostNs, resp.Ip, hostPair, nsPair); err != nil {
+			logger.WithError(err).Error("failed to save pod information for local ips map")
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return err
@@ -413,21 +411,25 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// attach bpf for veth ingress
 	if err := attachTcBPFIntoVeth(hostPair); err != nil {
+		logger.WithError(err).Error("failed to attach eBPF program to tc ingress")
 		return err
 	}
 
 	// crate vxlan
 	vxlan, err := nettools.CreateVxlanAndUp("fast-vxlan")
 	if err != nil {
+		logger.WithError(err).Error("failed to create vxlan and up")
 		return err
 	}
 
 	// save vxlan information to local map
 	if err := setVxlanInfoToLocalDevMap(vxlan); err != nil {
+		logger.WithError(err).Error("failed to save vxlan information to local map")
 		return err
 	}
 
 	if err := attachTcBPFIntoVxlan(vxlan); err != nil {
+		logger.WithError(err).Error("failed to attach eBPF program to vxlan")
 		return err
 	}
 
@@ -491,8 +493,11 @@ func cmdDel(args *skel.CmdArgs) error {
 		Namespace: string(k8sArgs.K8S_POD_NAMESPACE),
 		Name:      string(k8sArgs.K8S_POD_NAME),
 	})
+	if err != nil {
+		logger.WithError(err).Error("failed to release ip")
+	}
 
-	return err
+	return nil
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
