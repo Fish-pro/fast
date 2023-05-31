@@ -2,6 +2,7 @@ package bpf_map
 
 import (
 	"fmt"
+	"unsafe"
 
 	"github.com/cilium/ebpf"
 )
@@ -54,4 +55,13 @@ func GetLocalDevMap() *ebpf.Map {
 		_ = InitLoadPinnedMap()
 	}
 	return localDevMap
+}
+
+func PrintMapSize() {
+	fmt.Println(uint32(unsafe.Sizeof(LocalDevMapKey{})))
+	fmt.Println(uint32(unsafe.Sizeof(LocalDevMapValue{})))
+	fmt.Println(uint32(unsafe.Sizeof(LocalIpsMapKey{})))
+	fmt.Println(uint32(unsafe.Sizeof(LocalIpsMapInfo{})))
+	fmt.Println(uint32(unsafe.Sizeof(ClusterIpsMapKey{})))
+	fmt.Println(uint32(unsafe.Sizeof(ClusterIpsMapInfo{})))
 }

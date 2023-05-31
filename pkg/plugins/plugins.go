@@ -456,16 +456,16 @@ func cmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
-		"ContainerID":  args.ContainerID,
-		"NetNs":        args.Netns,
-		"IfName":       args.IfName,
-		"Args":         args.Args,
-		"Path":         args.Path,
-		"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
-		"PodName":      string(k8sArgs.K8S_POD_NAME),
-		"PodUid":       string(k8sArgs.K8S_POD_UID),
-	}).Info("DEL")
+	//logger.WithFields(logrus.Fields{
+	//	"ContainerID":  args.ContainerID,
+	//	"NetNs":        args.Netns,
+	//	"IfName":       args.IfName,
+	//	"Args":         args.Args,
+	//	"Path":         args.Path,
+	//	"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
+	//	"PodName":      string(k8sArgs.K8S_POD_NAME),
+	//	"PodUid":       string(k8sArgs.K8S_POD_UID),
+	//}).Info("DEL")
 
 	agentClient, conn, err := newAgentClient()
 	if err != nil {
