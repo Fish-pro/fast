@@ -6,7 +6,8 @@ REGISTRY = "fishpro3/fast"
 TARGETS := fast-controller-manager \
 			fast-agent
 
-CTL_TARGETS := fast
+CTL_TARGETS := fast \
+                fastctl
 
 CMD_TARGET=$(TARGETS) $(CTL_TARGETS)
 

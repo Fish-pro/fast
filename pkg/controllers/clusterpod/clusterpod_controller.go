@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cilium/ebpf"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -204,7 +203,7 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		return clusterIpsMap.Delete(bpfmap.ClusterIpsMapKey{IP: podIp})
 	}
 
-	return clusterIpsMap.Update(bpfmap.ClusterIpsMapKey{IP: podIp}, bpfmap.ClusterIpsMapInfo{IP: nodeIP}, ebpf.UpdateAny)
+	return clusterIpsMap.Put(bpfmap.ClusterIpsMapKey{IP: podIp}, bpfmap.ClusterIpsMapInfo{IP: nodeIP})
 }
 
 // If nodeName is used, it is not queued if there is no match
