@@ -16,8 +16,7 @@ spec:
         app: fast-agent
     spec:
       tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
+        - operator: Exists
       hostNetwork: true
       containers:
         - image: fishpro3/fast/fast-agent:latest

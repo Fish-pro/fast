@@ -86,6 +86,9 @@ func setUpVethPair(veth ...*netlink.Veth) error {
 func setIPForNsPair(nsPair *netlink.Veth, ip string) error {
 	ip32 := fmt.Sprintf("%s/%s", ip, "32")
 	ipAddr, ipNet, err := net.ParseCIDR(ip32)
+	if err != nil {
+		return err
+	}
 	ipNet.IP = ipAddr
 	link, err := netlink.LinkByName(nsPair.Name)
 	if err != nil {
@@ -101,6 +104,9 @@ func setIPForHostPair(gwPair *netlink.Veth, ip string) error {
 	}
 	ip32 := fmt.Sprintf("%s/%s", ip, "32")
 	ipAddr, ipNet, err := net.ParseCIDR(ip32)
+	if err != nil {
+		return err
+	}
 	ipNet.IP = ipAddr
 	link, err := netlink.LinkByName(gwPair.Name)
 	if err != nil {
@@ -118,7 +124,7 @@ func setHostPairIntoHost(veth *netlink.Veth, netNs ns.NetNS) error {
 }
 
 func setFibTableIntoNs(veth *netlink.Veth, gw string) error {
-	gwIp, gwNet, err := net.ParseCIDR(gw)
+	gwIp, gwNet, err := net.ParseCIDR(fmt.Sprintf("%s/32", gw))
 	if err != nil {
 		return err
 	}
@@ -130,8 +136,8 @@ func setFibTableIntoNs(veth *netlink.Veth, gw string) error {
 	if err := netlink.RouteAdd(&netlink.Route{
 		LinkIndex: veth.Attrs().Index,
 		Scope:     netlink.SCOPE_LINK,
-		Dst:       defNet,
-		Gw:        gwIp,
+		Dst:       gwNet,
+		Gw:        defIp,
 	}); err != nil {
 		return err
 	}
@@ -139,8 +145,8 @@ func setFibTableIntoNs(veth *netlink.Veth, gw string) error {
 	return netlink.RouteAdd(&netlink.Route{
 		LinkIndex: veth.Attrs().Index,
 		Scope:     netlink.SCOPE_UNIVERSE,
-		Dst:       gwNet,
-		Gw:        defIp,
+		Dst:       defNet,
+		Gw:        gwIp,
 	})
 }
 
@@ -182,11 +188,6 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 	if err != nil {
 		return err
 	}
-	netip, _, err := net.ParseCIDR(podIP)
-	if err != nil {
-		return err
-	}
-	podIP = netip.String()
 
 	nsVethPodIp := util.InetIpToUInt32(podIP)
 	hostVethIndex := uint32(hostVeth.Attrs().Index)
@@ -348,6 +349,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	netNs, err := ns.GetNS(args.Netns)
 	if err != nil {
+		logger.WithError(err).Error("failed to get netns")
 		return err
 	}
 
@@ -359,38 +361,49 @@ func cmdAdd(args *skel.CmdArgs) error {
 			fmt.Sprintf("%s/%s", string(k8sArgs.K8S_POD_NAMESPACE), string(k8sArgs.K8S_POD_NAME)))
 		nsPair, hostPair, err = createNsVethPair(args.IfName, 1450, vethName)
 		if err != nil {
+			logger.WithError(err).Error("failed to create veth pair")
 			return err
 		}
 
 		// host pair connect to host
 		if err := setHostPairIntoHost(hostPair, hostNs); err != nil {
+			logger.WithError(err).Error("failed to set host pair to host")
 			return err
 		}
 
 		// set ip for ns pair
 		if err := setIPForNsPair(nsPair, resp.Ip); err != nil {
+			logger.WithError(err).Error("failed to set ip for ns pair")
 			return err
 		}
 
 		// set up ns pair
 		if err := setUpVethPair(nsPair); err != nil {
+			logger.WithError(err).Error("failed to up ns pair")
 			return err
 		}
 
 		// add arp table for ns pair
 		if err := setFibTableIntoNs(nsPair, gwIP); err != nil {
+			logger.WithError(err).Error("failed to set arp table into ns")
 			return err
 		}
 		if err := setArp(gwIP, hostNs, hostPair, args.IfName); err != nil {
+			logger.WithError(err).Error("failed to set arp")
 			return err
 		}
 
 		// set up host pair
 		if err := setUpHostPair(hostNs, hostPair); err != nil {
+			logger.WithError(err).Error("failed to up host pair")
 			return err
 		}
 
-		return setVethPairInfoToLocalIPsMap(hostNs, resp.Ip, hostPair, nsPair)
+		if err := setVethPairInfoToLocalIPsMap(hostNs, resp.Ip, hostPair, nsPair); err != nil {
+			logger.WithError(err).Error("failed to save pod information for local ips map")
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return err
@@ -398,21 +411,25 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// attach bpf for veth ingress
 	if err := attachTcBPFIntoVeth(hostPair); err != nil {
+		logger.WithError(err).Error("failed to attach eBPF program to tc ingress")
 		return err
 	}
 
 	// crate vxlan
 	vxlan, err := nettools.CreateVxlanAndUp("fast-vxlan")
 	if err != nil {
+		logger.WithError(err).Error("failed to create vxlan and up")
 		return err
 	}
 
 	// save vxlan information to local map
 	if err := setVxlanInfoToLocalDevMap(vxlan); err != nil {
+		logger.WithError(err).Error("failed to save vxlan information to local map")
 		return err
 	}
 
 	if err := attachTcBPFIntoVxlan(vxlan); err != nil {
+		logger.WithError(err).Error("failed to attach eBPF program to vxlan")
 		return err
 	}
 
@@ -439,16 +456,16 @@ func cmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logger.WithFields(logrus.Fields{
-		"ContainerID":  args.ContainerID,
-		"NetNs":        args.Netns,
-		"IfName":       args.IfName,
-		"Args":         args.Args,
-		"Path":         args.Path,
-		"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
-		"PodName":      string(k8sArgs.K8S_POD_NAME),
-		"PodUid":       string(k8sArgs.K8S_POD_UID),
-	}).Info("DEL")
+	//logger.WithFields(logrus.Fields{
+	//	"ContainerID":  args.ContainerID,
+	//	"NetNs":        args.Netns,
+	//	"IfName":       args.IfName,
+	//	"Args":         args.Args,
+	//	"Path":         args.Path,
+	//	"PodNamespace": string(k8sArgs.K8S_POD_NAMESPACE),
+	//	"PodName":      string(k8sArgs.K8S_POD_NAME),
+	//	"PodUid":       string(k8sArgs.K8S_POD_UID),
+	//}).Info("DEL")
 
 	agentClient, conn, err := newAgentClient()
 	if err != nil {
@@ -476,8 +493,11 @@ func cmdDel(args *skel.CmdArgs) error {
 		Namespace: string(k8sArgs.K8S_POD_NAMESPACE),
 		Name:      string(k8sArgs.K8S_POD_NAME),
 	})
+	if err != nil {
+		logger.WithError(err).Error("failed to release ip")
+	}
 
-	return err
+	return nil
 }
 
 func cmdCheck(args *skel.CmdArgs) error {

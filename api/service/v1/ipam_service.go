@@ -117,5 +117,5 @@ func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateReques
 		return nil, err
 	}
 
-	return nil, s.ipsManager.ReleaseIP(ctx, pod)
+	return &ipamapiv1.ReleaseResponse{}, s.ipsManager.ReleaseIP(ctx, pod)
 }
