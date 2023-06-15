@@ -1,11 +1,12 @@
 package util
 
 import (
-	"k8s.io/apimachinery/pkg/util/sets"
 	"math/big"
 	"net"
 	"strconv"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func InetIpToUInt32(ip string) uint32 {
@@ -20,6 +21,15 @@ func InetIpToUInt32(ip string) uint32 {
 	sum += uint32(b2) << 8
 	sum += uint32(b3)
 	return sum
+}
+
+func InetUint32ToIp(intIP uint32) string {
+	var bytes [4]byte
+	bytes[0] = byte(intIP & 0xFF)
+	bytes[1] = byte((intIP >> 8) & 0xFF)
+	bytes[2] = byte((intIP >> 16) & 0xFF)
+	bytes[3] = byte((intIP >> 24) & 0xFF)
+	return net.IPv4(bytes[3], bytes[2], bytes[1], bytes[0]).String()
 }
 
 func intToIP(i *big.Int) net.IP {

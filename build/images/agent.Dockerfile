@@ -12,6 +12,7 @@ COPY bpf bpf
 COPY vendor vendor
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor -o fast-agent cmd/agent/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor -o fastctl cmd/fastctl/main.go
 
 FROM ubuntu:20.04 as compiler
 
@@ -34,6 +35,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y libelf-dev make sudo clang iproute2 ethtool
 COPY --from=compiler /usr/local/sbin/bpftool /usr/local/sbin/bpftool
+COPY --from=builder /app/fastctl /usr/local/bin/fastctl
 COPY --from=builder /app/fast-agent /app/fast-agent
 COPY bpf bpf
 COPY Makefile Makefile

@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/cilium/ebpf"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -189,6 +188,10 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 		return err
 	}
 
+	if len(podIP) == 0 {
+		return nil
+	}
+
 	nsVethPodIp := util.InetIpToUInt32(podIP)
 	hostVethIndex := uint32(hostVeth.Attrs().Index)
 	hostVethMac := stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
@@ -197,7 +200,7 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 
 	bpfMap := bpfmap.GetLocalPodIpsMap()
 
-	return bpfMap.Update(
+	return bpfMap.Put(
 		bpfmap.LocalIpsMapKey{IP: nsVethPodIp},
 		bpfmap.LocalIpsMapInfo{
 			IfIndex:    nsVethIndex,
@@ -205,7 +208,6 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 			MAC:        nsVethMac,
 			NodeMAC:    hostVethMac,
 		},
-		ebpf.UpdateAny,
 	)
 }
 
@@ -229,14 +231,13 @@ func attachTcBPFIntoVeth(veth *netlink.Veth) error {
 
 func setVxlanInfoToLocalDevMap(vxlan *netlink.Vxlan) error {
 	bpfMap := bpfmap.GetLocalDevMap()
-	return bpfMap.Update(
+	return bpfMap.Put(
 		bpfmap.LocalDevMapKey{
 			Type: bpfmap.VxlanDevType,
 		},
 		bpfmap.LocalDevMapValue{
 			IfIndex: uint32(vxlan.Attrs().Index),
 		},
-		ebpf.UpdateAny,
 	)
 }
 

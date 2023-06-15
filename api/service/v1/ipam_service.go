@@ -113,6 +113,9 @@ func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateReques
 
 	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return &ipamapiv1.ReleaseResponse{}, nil
+		}
 		s.logger.Error("get pod from lister error", zap.Error(err))
 		return nil, err
 	}

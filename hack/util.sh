@@ -9,6 +9,7 @@ FAST_GO_PACKAGE="github.com/fast-io/fast"
 FAST_TARGET_SOURCE=(
   fast-controller-manager=cmd/controller-manager
   fast-agent=cmd/agent
+  fastctl=cmd/fastctl
   fast=cmd/fast
 )
 
