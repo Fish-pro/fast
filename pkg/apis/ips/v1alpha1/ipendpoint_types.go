@@ -22,7 +22,7 @@ type IpEndpoint struct {
 type IpEndpointList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Ips `json:"items"`
+	Items           []IpEndpoint `json:"items"`
 }
 
 // IpEndpointStatus defines the observed state of Ips
