@@ -20,13 +20,14 @@ import (
 )
 
 const (
-	IpsPodAnnotation = "fast.io/ips"
-	DefaultIpsName   = "default-ips"
+	IpsPodAnnotation    = "fast.io/ips"
+	DefaultIpsName      = "default-ips"
+	IPEndpointFinalizer = "ipam-manager"
 )
 
 type IpsManager interface {
 	AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alpha1.Ips, net.IP, error)
-	ReleaseIP(ctx context.Context, pod *corev1.Pod) error
+	ReleaseIP(ctx context.Context, namespace, name string) error
 	UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error
 	CreateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error
 	NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error)
@@ -88,23 +89,42 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*ipsv1alp
 	return ips, ip, nil
 }
 
-func (c *ipsManager) ReleaseIP(ctx context.Context, pod *corev1.Pod) error {
-	ipsName := pod.Annotations[IpsPodAnnotation]
-	if len(ipsName) == 0 {
-		ipsName = DefaultIpsName
-	}
-	obj, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
+func (c *ipsManager) ReleaseIP(ctx context.Context, namespace, name string) error {
+	ipEndpoint, err := c.client.SampleV1alpha1().IpEndpoints(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
-	ips := obj.DeepCopy()
-
-	if ips == nil || ips.Status.AllocatedIPs == nil || len(ips.Status.AllocatedIPs) == 0 {
+	if ipEndpoint == nil {
 		return nil
 	}
-	delete(ips.Status.AllocatedIPs, pod.Status.PodIP)
 
-	return c.UpdateIpsStatus(ctx, obj, ips.Status)
+	ipsList, err := c.client.SampleV1alpha1().Ipses().List(ctx, metav1.ListOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	releaseIP := ipEndpoint.Status.IPs.IPv4
+	for _, obj := range ipsList.Items {
+		ips := obj.DeepCopy()
+		if ips.Status.AllocatedIPs == nil || len(ips.Status.AllocatedIPs) == 0 {
+			return nil
+		}
+		if _, ok := ips.Status.AllocatedIPs[releaseIP]; !ok {
+			continue
+		}
+		delete(ips.Status.AllocatedIPs, releaseIP)
+		if err := c.UpdateIpsStatus(ctx, &obj, ips.Status); err != nil {
+			return err
+		}
+	}
+
+	if controllerutil.ContainsFinalizer(ipEndpoint, IPEndpointFinalizer) {
+		controllerutil.RemoveFinalizer(ipEndpoint, IPEndpointFinalizer)
+		if _, err := c.client.SampleV1alpha1().IpEndpoints(namespace).Update(ctx, ipEndpoint, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *ipsManager) UpdateIpsStatus(ctx context.Context, ips *ipsv1alpha1.Ips, nowStatus ipsv1alpha1.IpsStatus) error {
@@ -143,8 +163,9 @@ func (c *ipsManager) CreateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpE
 func (c *ipsManager) NewIpEndpoint(ip string, pod *corev1.Pod, ips *ipsv1alpha1.Ips) (*ipsv1alpha1.IpEndpoint, error) {
 	ipep := &ipsv1alpha1.IpEndpoint{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pod.Name,
-			Namespace: pod.Namespace,
+			Name:       pod.Name,
+			Namespace:  pod.Namespace,
+			Finalizers: []string{IPEndpointFinalizer},
 		},
 		Status: ipsv1alpha1.IpEndpointStatus{
 			UID:  string(pod.UID),

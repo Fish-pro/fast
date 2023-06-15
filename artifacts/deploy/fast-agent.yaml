@@ -46,11 +46,20 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
-            - mountPath: /host/proc
-              name: host-proc
-            - mountPath: /host/var/run
-              name: host-var-run
-              mountPropagation: Bidirectional
+            - mountPath: /host/proc/sys/net
+              name: host-proc-sys-net
+            - mountPath: /host/proc/sys/kernel
+              name: host-proc-sys-kernel
+            - mountPath: /sys/fs/bpf
+              mountPropagation: HostToContainer
+              name: bpf-maps
+            - mountPath: /lib/modules
+              name: lib-modules
+              readOnly: true
+            - mountPath: /run/xtables.lock
+              name: xtables-lock
+            - mountPath: /tmp
+              name: tmp
       nodeSelector:
         kubernetes.io/arch: amd64
       priorityClassName: system-node-critical
@@ -58,9 +67,26 @@ spec:
       serviceAccount: fast-agent
       serviceAccountName: fast-agent
       volumes:
+        - emptyDir: {}
+          name: tmp
         - hostPath:
-            path: /var/run
-          name: host-var-run
+            path: /sys/fs/bpf
+            type: DirectoryOrCreate
+          name: bpf-maps
         - hostPath:
-            path: /proc
-          name: host-proc
+            path: /lib/modules
+            type: ""
+          name: lib-modules
+        - hostPath:
+            path: /run/xtables.lock
+            type: FileOrCreate
+          name: xtables-lock
+        - hostPath:
+            path: /proc/sys/net
+            type: Directory
+          name: host-proc-sys-net
+        - hostPath:
+            path: /proc/sys/kernel
+            type: Directory
+          name: host-proc-sys-kernel
+

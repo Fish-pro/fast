@@ -188,19 +188,19 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 		return err
 	}
 
+	podIP = net.ParseIP(podIP).String()
 	if len(podIP) == 0 {
 		return nil
 	}
 
 	nsVethPodIp := util.InetIpToUInt32(podIP)
-	hostVethIndex := uint32(hostVeth.Attrs().Index)
-	hostVethMac := stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
 	nsVethIndex := uint32(nsVeth.Attrs().Index)
 	nsVethMac := stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr))
+	hostVethIndex := uint32(hostVeth.Attrs().Index)
+	hostVethMac := stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
+	localIpsMap := bpfmap.GetLocalPodIpsMap()
 
-	bpfMap := bpfmap.GetLocalPodIpsMap()
-
-	return bpfMap.Put(
+	return localIpsMap.Put(
 		bpfmap.LocalIpsMapKey{IP: nsVethPodIp},
 		bpfmap.LocalIpsMapInfo{
 			IfIndex:    nsVethIndex,

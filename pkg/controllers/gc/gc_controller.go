@@ -188,17 +188,7 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		logger.V(4).Info("Finished syncing pod", "pod", name, "duration", time.Since(startTime))
 	}()
 
-	obj, err := c.podLister.Pods(ns).Get(name)
-	if apierrors.IsNotFound(err) {
-		logger.Info("Ips not found", "pod", name)
-		return nil
-	} else if err != nil {
-		logger.Error(err, "Failed to get pod", "pod", name)
-		return err
-	}
-	pod := obj.DeepCopy()
-
-	return c.ipsManager.ReleaseIP(ctx, pod)
+	return c.ipsManager.ReleaseIP(ctx, ns, name)
 }
 
 // If nodeName is used, it is not queued if there is no match

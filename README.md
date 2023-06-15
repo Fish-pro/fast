@@ -9,14 +9,17 @@ Fast is a Kubernetes CNI based on  [eBPF](https://ebpf.io)  implementation
 Components:
 + fast-cni
   + implement CNI capabilities
-  + access fast-agent fetch pod IP
-  + init map and attach eBPF programs
+  + access fast-agent fetch pod IP and store to the node local eBPF map
+  + attach eBPF program to NIC
 + fast-agent
-  + obtain the cluster pod IP and store the information to the cluster eBPF map
   + the interface that implements IP allocation
+  + obtain the cluster pod IP and store the information to the cluster eBPF map
+  + init eBPF map
 + fast-controller-manager
   + custom resources control
   + gc management to prevent IP leakage
++ fastctl
+  + node command tool for eBPF map
 
 ## Quick Start
 
