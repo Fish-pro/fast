@@ -18,6 +18,8 @@ Components:
 + fast-controller-manager
   + custom resources control
   + gc management to prevent IP leakage
++ fastctl
+  + node command tool for eBPF map
 
 ## Quick Start
 

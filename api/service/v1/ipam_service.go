@@ -35,7 +35,6 @@ func NewIPAMService(
 	client ipsversioned.Interface,
 	podInformer coreinformers.PodInformer,
 	logger *zap.Logger) ipamapiv1.IpServiceServer {
-
 	ipamSvc := &IPAMService{
 		client:     client,
 		logger:     logger,
@@ -111,14 +110,5 @@ func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateReques
 	}
 	s.logger.Info("release ip", zap.String("namespace", req.Namespace), zap.String("name", req.Name))
 
-	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return &ipamapiv1.ReleaseResponse{}, nil
-		}
-		s.logger.Error("get pod from lister error", zap.Error(err))
-		return nil, err
-	}
-
-	return &ipamapiv1.ReleaseResponse{}, s.ipsManager.ReleaseIP(ctx, pod)
+	return &ipamapiv1.ReleaseResponse{}, s.ipsManager.ReleaseIP(ctx, req.Namespace, req.Name)
 }

@@ -189,6 +189,9 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 
 	pod, err := c.podLister.Pods(ns).Get(name)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		logger.Error(err, "failed to get pod")
 		return err
 	}
