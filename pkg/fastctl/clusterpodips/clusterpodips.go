@@ -3,6 +3,7 @@ package clusterpodips
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 func NewClusterPodIpsCommand(name string, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -11,10 +12,10 @@ func NewClusterPodIpsCommand(name string, ioStreams genericclioptions.IOStreams)
 		Aliases: []string{"cips"},
 		Short:   "Manage cluster pod ips on the Fast",
 		Long:    "Manage cluster pod ips on the Fast",
-		Run: func(cmd *cobra.Command, args []string) {
-
-		},
+		Run:     cmdutil.DefaultSubCommandRun(ioStreams.ErrOut),
 	}
 	cmd.AddCommand(NewListCommand(name, ioStreams))
+	cmd.AddCommand(NewSetCommand(name, ioStreams))
+	cmd.AddCommand(NewDeleteCommand(name, ioStreams))
 	return cmd
 }

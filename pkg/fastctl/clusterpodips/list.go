@@ -14,14 +14,14 @@ import (
 )
 
 type listOptions struct {
-	ioStream genericclioptions.IOStreams
+	genericclioptions.IOStreams
 
 	clusterPodIpsMap *ebpf.Map
 }
 
-func newListOptions(ipStream genericclioptions.IOStreams) *listOptions {
+func newListOptions(ioStream genericclioptions.IOStreams) *listOptions {
 	return &listOptions{
-		ioStream:         ipStream,
+		IOStreams:        ioStream,
 		clusterPodIpsMap: bpfmap.GetClusterPodIpsMap(),
 	}
 }

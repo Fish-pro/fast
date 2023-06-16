@@ -83,7 +83,7 @@ func (c *ipsManager) AllocateIP(ctx context.Context, pod *corev1.Pod) (*Allocate
 			PodUid: string(pod.UID),
 		}
 
-		if _, err := c.client.SampleV1alpha1().Ipses().Update(ctx, ips, metav1.UpdateOptions{}); err != nil {
+		if _, err := c.client.SampleV1alpha1().Ipses().UpdateStatus(ctx, ips, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		res = AllocateResult{Namespace: pod.Namespace, Name: pod.Name, IPsName: ipsName, IP: ip.String()}
@@ -108,6 +108,9 @@ func (c *ipsManager) ReleaseIP(ctx context.Context, namespace, name string) erro
 
 	releaseIP := ipep.Status.IPs.IPv4
 	ipsName := ipep.Status.IPs.IPv4Pool
+	if len(releaseIP) == 0 || len(ipsName) == 0 {
+		return fmt.Errorf("failed to get release IP(%s) or ips name(%s)", releaseIP, ipsName)
+	}
 	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		ips, err := c.client.SampleV1alpha1().Ipses().Get(ctx, ipsName, metav1.GetOptions{})
 		if err != nil {
@@ -118,7 +121,7 @@ func (c *ipsManager) ReleaseIP(ctx context.Context, namespace, name string) erro
 		}
 		delete(ips.Status.AllocatedIPs, releaseIP)
 
-		if _, err := c.client.SampleV1alpha1().Ipses().Update(ctx, ips, metav1.UpdateOptions{}); err != nil {
+		if _, err := c.client.SampleV1alpha1().Ipses().UpdateStatus(ctx, ips, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		return nil
@@ -126,11 +129,26 @@ func (c *ipsManager) ReleaseIP(ctx context.Context, namespace, name string) erro
 	if err != nil {
 		return fmt.Errorf("failed to release ip for ipe %s; %w", ipsName, err)
 	}
+	return c.removeIpEndpointFinalizer(ctx, ipep)
+}
 
+func (c *ipsManager) removeIpEndpointFinalizer(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error {
 	if controllerutil.ContainsFinalizer(ipep, IPsManagerFinalizer) {
 		controllerutil.RemoveFinalizer(ipep, IPsManagerFinalizer)
-		if _, err := c.client.SampleV1alpha1().IpEndpoints(namespace).Update(ctx, ipep, metav1.UpdateOptions{}); err != nil {
-			return err
+		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			got, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Get(ctx, ipep.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			ipep.SetResourceVersion(got.GetResourceVersion())
+			_, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Update(ctx, ipep, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to remove finalizer for ip endpoint: %w", err)
 		}
 	}
 	return nil
@@ -159,15 +177,25 @@ func (c *ipsManager) NewIpEndpoint(ipsName string, pod *corev1.Pod, ip string) (
 }
 
 func (c *ipsManager) CreateIpEndpoint(ctx context.Context, ipep *ipsv1alpha1.IpEndpoint) error {
-	created, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Create(ctx, ipep, metav1.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return err
-	}
-	ipep.SetResourceVersion(created.GetResourceVersion())
-	if _, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Update(ctx, ipep, metav1.UpdateOptions{}); err != nil {
-		return err
-	}
-	return nil
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var (
+			got *ipsv1alpha1.IpEndpoint
+			err error
+		)
+		got, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Get(ctx, ipep.Name, metav1.GetOptions{})
+		if err != nil && apierrors.IsNotFound(err) {
+			if got, err = c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).Create(ctx, ipep, metav1.CreateOptions{}); err != nil {
+				return err
+			}
+		} else if err != nil {
+			return err
+		}
+		ipep.SetResourceVersion(got.GetResourceVersion())
+		if _, err := c.client.SampleV1alpha1().IpEndpoints(ipep.Namespace).UpdateStatus(ctx, ipep, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func getIpsNameByPod(pod *corev1.Pod) string {

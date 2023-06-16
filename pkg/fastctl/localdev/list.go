@@ -13,14 +13,14 @@ import (
 )
 
 type listOptions struct {
-	ioStream genericclioptions.IOStreams
+	genericclioptions.IOStreams
 
 	localDevMap *ebpf.Map
 }
 
-func newListOptions(ipStream genericclioptions.IOStreams) *listOptions {
+func newListOptions(ioStream genericclioptions.IOStreams) *listOptions {
 	return &listOptions{
-		ioStream:    ipStream,
+		IOStreams:   ioStream,
 		localDevMap: bpfmap.GetLocalDevMap(),
 	}
 }
