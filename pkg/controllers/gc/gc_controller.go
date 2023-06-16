@@ -84,12 +84,6 @@ func NewController(
 
 	logger.Info("Setting up event handlers")
 	_, err := podInformer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			controller.enqueue(logger, obj)
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			controller.enqueue(logger, newObj)
-		},
 		DeleteFunc: func(obj interface{}) {
 			controller.enqueue(logger, obj)
 		},
