@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,13 +82,13 @@ func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateReque
 		return &ipamapiv1.AllocateResponse{Ip: ipep.Status.IPs.IPv4}, nil
 	}
 
-	ips, ip, err := s.ipsManager.AllocateIP(ctx, pod)
+	allocateResult, err := s.ipsManager.AllocateIP(ctx, pod)
 	if err != nil {
 		s.logger.Error("failed to allocate ip", zap.Error(err))
 		return nil, err
 	}
 
-	ipep, err = s.ipsManager.NewIpEndpoint(ctx, ips, pod, ip.String())
+	ipep, err = s.ipsManager.NewIpEndpoint(allocateResult.IPsName, pod, allocateResult.IP)
 	if err != nil {
 		s.logger.Error("failed to new ip endpoint")
 		return nil, err
@@ -97,9 +98,9 @@ func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateReque
 		s.logger.Error("failed to create or update ip endpoint", zap.Error(err))
 		return nil, err
 	}
-	s.logger.Info("allocate ip successfully", zap.String("ip", ip.String()))
+	s.logger.Info("allocate ip successfully", zap.String("ip", allocateResult.IP))
 
-	return &ipamapiv1.AllocateResponse{Ip: ip.String()}, nil
+	return &ipamapiv1.AllocateResponse{Ip: allocateResult.IP}, nil
 }
 
 func (s *IPAMService) Release(ctx context.Context, req *ipamapiv1.AllocateRequest) (*ipamapiv1.ReleaseResponse, error) {
