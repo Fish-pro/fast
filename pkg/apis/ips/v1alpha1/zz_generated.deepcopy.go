@@ -91,7 +91,7 @@ func (in *IpEndpointList) DeepCopyInto(out *IpEndpointList) {
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]Ips, len(*in))
+		*out = make([]IpEndpoint, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
