@@ -31,8 +31,11 @@ const (
 	VethNetName  = "veth_net"
 )
 
+var logger *logrus.Logger
+
 func init() {
 	runtime.LockOSThread()
+	logger = util.NewLogger()
 }
 
 type PluginConf struct {
@@ -193,22 +196,25 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 		return nil
 	}
 
-	nsVethPodIp := util.InetIpToUInt32(podIP)
-	nsVethIndex := uint32(nsVeth.Attrs().Index)
-	nsVethMac := util.Stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr))
-	hostVethIndex := uint32(hostVeth.Attrs().Index)
-	hostVethMac := util.Stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
 	localIpsMap := bpfmap.GetLocalPodIpsMap()
+	bpfKey := bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(podIP)}
+	bpfValue := bpfmap.LocalIpsMapInfo{
+		IfIndex:    uint32(nsVeth.Attrs().Index),
+		LxcIfIndex: uint32(hostVeth.Attrs().Index),
+		MAC:        util.Stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr)),
+		NodeMAC:    util.Stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr)),
+	}
 
-	return localIpsMap.Put(
-		bpfmap.LocalIpsMapKey{IP: nsVethPodIp},
-		bpfmap.LocalIpsMapInfo{
-			IfIndex:    nsVethIndex,
-			LxcIfIndex: hostVethIndex,
-			MAC:        nsVethMac,
-			NodeMAC:    hostVethMac,
-		},
-	)
+	logger.WithFields(logrus.Fields{
+		"key":   bpfKey,
+		"value": bpfValue,
+	}).Info("set local pod ips to local_pod_ips eBPF map")
+
+	if err := localIpsMap.Put(bpfKey, bpfValue); err != nil {
+		logger.WithError(err).Error("failed set local pod ips to local_pod_ips eBPF map")
+		return err
+	}
+	return nil
 }
 
 func attachTcBPFIntoVeth(veth *netlink.Veth) error {
@@ -219,14 +225,15 @@ func attachTcBPFIntoVeth(veth *netlink.Veth) error {
 
 func setVxlanInfoToLocalDevMap(vxlan *netlink.Vxlan) error {
 	bpfMap := bpfmap.GetLocalDevMap()
-	return bpfMap.Put(
-		bpfmap.LocalDevMapKey{
-			Type: bpfmap.VxlanDevType,
-		},
-		bpfmap.LocalDevMapValue{
-			IfIndex: uint32(vxlan.Attrs().Index),
-		},
-	)
+	bpfKey := bpfmap.LocalDevMapKey{Type: bpfmap.VxlanDevType}
+	bpfValue := bpfmap.LocalDevMapValue{IfIndex: uint32(vxlan.Attrs().Index)}
+
+	logger.WithFields(logrus.Fields{
+		"key":   bpfKey,
+		"value": bpfValue,
+	}).Info("set NIC to local_dev eBPF map")
+
+	return bpfMap.Put(bpfKey, bpfValue)
 }
 
 func attachTcBPFIntoVxlan(vxlan *netlink.Vxlan) error {
@@ -251,8 +258,6 @@ func attachTcBPFIntoVxlan(vxlan *netlink.Vxlan) error {
  * tc filter add dev ${pod veth name} ingress bpf direct-action obj veth_ingress.o
  */
 func cmdAdd(args *skel.CmdArgs) error {
-	logger := util.NewLogger()
-
 	pluginConfig, err := loadConfig(args.StdinData)
 	if err != nil {
 		logger.WithError(err).Error("failed to load plugin config")
@@ -437,7 +442,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	logger := util.NewLogger()
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
 		err := fmt.Errorf("failed to load CNI ENV args: %w", err)
@@ -490,7 +494,6 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
-	logger := util.NewLogger()
 	logger.WithFields(logrus.Fields{
 		"ContainerID": args.ContainerID,
 		"NetNs":       args.Netns,

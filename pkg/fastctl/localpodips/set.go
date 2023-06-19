@@ -63,22 +63,18 @@ func (o *setOptions) Validate(args []string) error {
 
 func (o *setOptions) Run() error {
 	localIpsMap := bpfmap.GetLocalPodIpsMap()
-	podIP := util.InetIpToUInt32(o.podIP)
-	nsVethIndex := uint32(o.nsIndex)
-	nsVethMac := util.Stuff8Byte([]byte(o.nsMac))
-	hostVethIndex := uint32(o.hostIndex)
-	hostVethMac := util.Stuff8Byte([]byte(o.hostMac))
-	if err := localIpsMap.Put(
-		bpfmap.LocalIpsMapKey{IP: podIP},
-		bpfmap.LocalIpsMapInfo{
-			IfIndex:    nsVethIndex,
-			LxcIfIndex: hostVethIndex,
-			MAC:        nsVethMac,
-			NodeMAC:    hostVethMac,
-		},
-	); err != nil {
+	bpfKey := bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(o.podIP)}
+	bpfValue := bpfmap.LocalIpsMapInfo{
+		IfIndex:    uint32(o.nsIndex),
+		LxcIfIndex: uint32(o.hostIndex),
+		MAC:        util.Stuff8Byte([]byte(o.nsMac)),
+		NodeMAC:    util.Stuff8Byte([]byte(o.hostMac)),
+	}
+
+	if err := localIpsMap.Put(bpfKey, bpfValue); err != nil {
 		return fmt.Errorf("failed to set local pod ip %s to map: %w", o.podIP, err)
 	}
+
 	fmt.Fprintf(o.Out, "set map successfully %s\n", o.podIP)
 	return nil
 }
