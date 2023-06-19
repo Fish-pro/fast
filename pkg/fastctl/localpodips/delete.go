@@ -27,7 +27,7 @@ func NewDeleteCommand(name string, ioStreaam genericclioptions.IOStreams) *cobra
 	o := newDeleteOptions(ioStreaam)
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{},
+		Aliases: []string{"del"},
 		Short:   "delete local pod ip eBPF map",
 		Long:    "delete local pod ip eBPF map",
 		Example: fmt.Sprintf("    %s localpodips --pod-ip 10.244.5.100 --ns-index 3 --ns-mac foo --host-index 3 --host-mac bar", name),

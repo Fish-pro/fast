@@ -34,7 +34,7 @@ func NewSetCommand(name string, ioStreaam genericclioptions.IOStreams) *cobra.Co
 		Aliases: []string{},
 		Short:   "set local pod ip eBPF map",
 		Long:    "set local pod ip eBPF map",
-		Example: fmt.Sprintf("    %s localpodips --pod-ip 10.244.5.100 --ns-index 3 --ns-mac foo --host-index 3 --host-mac bar", name),
+		Example: fmt.Sprintf("    %s localpodips set --pod-ip 10.244.5.100 --ns-index 3 --ns-mac foo --host-index 3 --host-mac bar", name),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate(args))

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"runtime"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -34,7 +33,6 @@ const (
 var logger *logrus.Logger
 
 func init() {
-	runtime.LockOSThread()
 	logger = util.NewLogger()
 }
 
