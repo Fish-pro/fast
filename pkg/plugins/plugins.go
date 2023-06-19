@@ -195,9 +195,9 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 
 	nsVethPodIp := util.InetIpToUInt32(podIP)
 	nsVethIndex := uint32(nsVeth.Attrs().Index)
-	nsVethMac := stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr))
+	nsVethMac := util.Stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr))
 	hostVethIndex := uint32(hostVeth.Attrs().Index)
-	hostVethMac := stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
+	hostVethMac := util.Stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr))
 	localIpsMap := bpfmap.GetLocalPodIpsMap()
 
 	return localIpsMap.Put(
@@ -209,18 +209,6 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 			NodeMAC:    hostVethMac,
 		},
 	)
-}
-
-func stuff8Byte(b []byte) [8]byte {
-	var res [8]byte
-	if len(b) > 8 {
-		b = b[0:9]
-	}
-
-	for index, _byte := range b {
-		res[index] = _byte
-	}
-	return res
 }
 
 func attachTcBPFIntoVeth(veth *netlink.Veth) error {

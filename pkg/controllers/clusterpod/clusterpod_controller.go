@@ -213,7 +213,7 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 func (c *Controller) enqueue(logger klog.Logger, obj interface{}) {
 	pod := obj.(*v1.Pod)
 	if len(pod.Spec.NodeName) != 0 && pod.Spec.NodeName != string(c.nodeName) {
-		logger.V(4).Info("Access nodeName not match node", "pod", pod.Name, "node", c.nodeName)
+		logger.V(10).Info("Access nodeName not match node", "pod", pod.Name, "node", c.nodeName)
 		return
 	}
 
