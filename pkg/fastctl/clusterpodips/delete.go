@@ -7,7 +7,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	bpfmap "github.com/fast-io/fast/bpf/map"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
 	"github.com/fast-io/fast/pkg/util"
 )
 
@@ -27,7 +27,7 @@ func NewDeleteCommand(name string, ioStreaam genericclioptions.IOStreams) *cobra
 	o := newDeleteOptions(ioStreaam)
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{},
+		Aliases: []string{"del"},
 		Short:   "delete cluster pod ip eBPF map",
 		Long:    "delete cluster pod ip eBPF map",
 		Example: fmt.Sprintf("    %s clusterpodips delete --pod-ip 10.244.0.1 --node-ip 10.29.15.48r", name),

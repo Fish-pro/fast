@@ -38,9 +38,9 @@ import (
 
 	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
 	ipamservicev1 "github.com/fast-io/fast/api/service/v1"
-	bpfmap "github.com/fast-io/fast/bpf/map"
 	"github.com/fast-io/fast/cmd/agent/app/config"
 	"github.com/fast-io/fast/cmd/agent/app/options"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
 	clientbuilder "github.com/fast-io/fast/pkg/builder"
 	clusterpodctrl "github.com/fast-io/fast/pkg/controllers/clusterpod"
 	grpclogger "github.com/fast-io/fast/pkg/logger"

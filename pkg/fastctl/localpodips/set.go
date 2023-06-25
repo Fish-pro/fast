@@ -7,7 +7,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	bpfmap "github.com/fast-io/fast/bpf/map"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
 	"github.com/fast-io/fast/pkg/util"
 )
 
@@ -34,7 +34,7 @@ func NewSetCommand(name string, ioStreaam genericclioptions.IOStreams) *cobra.Co
 		Aliases: []string{},
 		Short:   "set local pod ip eBPF map",
 		Long:    "set local pod ip eBPF map",
-		Example: fmt.Sprintf("    %s localpodips --pod-ip 10.244.5.100 --ns-index 3 --ns-mac foo --host-index 3 --host-mac bar", name),
+		Example: fmt.Sprintf("    %s localpodips set --pod-ip 10.244.5.100 --ns-index 3 --ns-mac foo --host-index 3 --host-mac bar", name),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate(args))
@@ -63,22 +63,18 @@ func (o *setOptions) Validate(args []string) error {
 
 func (o *setOptions) Run() error {
 	localIpsMap := bpfmap.GetLocalPodIpsMap()
-	podIP := util.InetIpToUInt32(o.podIP)
-	nsVethIndex := uint32(o.nsIndex)
-	nsVethMac := util.Stuff8Byte([]byte(o.nsMac))
-	hostVethIndex := uint32(o.hostIndex)
-	hostVethMac := util.Stuff8Byte([]byte(o.hostMac))
-	if err := localIpsMap.Put(
-		bpfmap.LocalIpsMapKey{IP: podIP},
-		bpfmap.LocalIpsMapInfo{
-			IfIndex:    nsVethIndex,
-			LxcIfIndex: hostVethIndex,
-			MAC:        nsVethMac,
-			NodeMAC:    hostVethMac,
-		},
-	); err != nil {
+	bpfKey := bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(o.podIP)}
+	bpfValue := bpfmap.LocalIpsMapInfo{
+		IfIndex:    uint32(o.nsIndex),
+		LxcIfIndex: uint32(o.hostIndex),
+		MAC:        util.Stuff8Byte([]byte(o.nsMac)),
+		NodeMAC:    util.Stuff8Byte([]byte(o.hostMac)),
+	}
+
+	if err := localIpsMap.Put(bpfKey, bpfValue); err != nil {
 		return fmt.Errorf("failed to set local pod ip %s to map: %w", o.podIP, err)
 	}
+
 	fmt.Fprintf(o.Out, "set map successfully %s\n", o.podIP)
 	return nil
 }
