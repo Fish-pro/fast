@@ -19,8 +19,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
-	bpfmap "github.com/fast-io/fast/bpf/map"
-	"github.com/fast-io/fast/bpf/tc"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
+	"github.com/fast-io/fast/pkg/bpf/tc"
 	"github.com/fast-io/fast/pkg/nettools"
 	"github.com/fast-io/fast/pkg/util"
 )

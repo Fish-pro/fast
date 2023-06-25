@@ -9,7 +9,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	bpfmap "github.com/fast-io/fast/bpf/map"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
 )
 
 type listOptions struct {

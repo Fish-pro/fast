@@ -51,8 +51,11 @@ spec:
             - mountPath: /host/proc/sys/kernel
               name: host-proc-sys-kernel
             - mountPath: /sys/fs/bpf
-              mountPropagation: HostToContainer
+              mountPropagation: Bidirectional
               name: bpf-maps
+            - mountPath: /opt/fast
+              mountPropagation: Bidirectional
+              name: bpf-progs
             - mountPath: /lib/modules
               name: lib-modules
               readOnly: true
@@ -73,6 +76,10 @@ spec:
             path: /sys/fs/bpf
             type: DirectoryOrCreate
           name: bpf-maps
+        - hostPath:
+            path: /opt/fast
+            type: DirectoryOrCreate
+          name: bpf-progs
         - hostPath:
             path: /lib/modules
             type: ""

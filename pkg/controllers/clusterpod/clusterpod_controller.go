@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
-	bpfmap "github.com/fast-io/fast/bpf/map"
+	bpfmap "github.com/fast-io/fast/pkg/bpf/map"
 	"github.com/fast-io/fast/pkg/util"
 )
 
