@@ -61,6 +61,9 @@ type IpsStatus struct {
 }
 
 type AllocatedPod struct {
-	Pod    string `json:"pod,omitempty"`
+	// +kubebuilder:validation:Optional
+	Pod string `json:"pod,omitempty"`
+
+	// +kubebuilder:validation:Optional
 	PodUid string `json:"poduid,omitempty"`
 }
