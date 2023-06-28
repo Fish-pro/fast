@@ -30,9 +30,9 @@ RUN git clone -b v5.4 https://github.com/torvalds/linux.git --depth 1
 RUN cd /app/linux/tools/bpf/bpftool && \
     make && make install
 
-RUN	clang -g  -O2 -emit-llvm -c ./plugins/vxlan/ebpf/vxlan_egress.c -o - | llc -march=bpf -filetype=obj -o vxlan_egress.o
-RUN	clang -g  -O2 -emit-llvm -c ./plugins/vxlan/ebpf/vxlan_ingress.c -o - | llc -march=bpf -filetype=obj -o vxlan_ingress.o
-RUN	clang -g  -O2 -emit-llvm -c ./plugins/vxlan/ebpf/veth_ingress.c -o - | llc -march=bpf -filetype=obj -o veth_ingress.o
+RUN	clang -g  -O2 -emit-llvm -c vxlan_egress.c -o - | llc -march=bpf -filetype=obj -o vxlan_egress.o
+RUN	clang -g  -O2 -emit-llvm -c vxlan_ingress.c -o - | llc -march=bpf -filetype=obj -o vxlan_ingress.o
+RUN	clang -g  -O2 -emit-llvm -c veth_ingress.c -o - | llc -march=bpf -filetype=obj -o veth_ingress.o
 
 FROM ubuntu:20.04
 

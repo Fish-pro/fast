@@ -20,6 +20,7 @@ struct localIpsMapInfo {
   __u8 nodeMac[8];
 };
 
+// The container IP address of the local node is stored
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
@@ -37,6 +38,7 @@ struct clusterIpsMapInfo {
   __u32 ip;
 };
 
+// The container IP addresses of other nodes are stored
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
@@ -53,6 +55,7 @@ struct localDevMapValue {
   __u32 ifIndex;
 };
 
+// Stores the vxlan NIC information
 struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
