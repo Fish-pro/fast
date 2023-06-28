@@ -53,9 +53,6 @@ spec:
             - mountPath: /sys/fs/bpf
               mountPropagation: Bidirectional
               name: bpf-maps
-            - mountPath: /opt/fast
-              mountPropagation: Bidirectional
-              name: bpf-progs
             - mountPath: /lib/modules
               name: lib-modules
               readOnly: true
