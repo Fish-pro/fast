@@ -21,11 +21,11 @@ int cls_main(struct __sk_buff *skb) {
   struct ethhdr  *eth  = data;
   struct iphdr   *ip   = (data + sizeof(struct ethhdr));
   if (eth->h_proto != __constant_htons(ETH_P_IP)) {
-		return TC_ACT_UNSPEC;
+	return TC_ACT_UNSPEC;
   }
 
   __u32 src_ip = htonl(ip->saddr);
-	__u32 dst_ip = htonl(ip->daddr);
+  __u32 dst_ip = htonl(ip->daddr);
   struct podNodeKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
   struct podNodeValue *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
