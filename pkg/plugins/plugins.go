@@ -408,7 +408,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	// crate vxlan
-	vxlan, err := nettools.CreateVxlanAndUp("fast-vxlan")
+	vxlan, err := nettools.CreateVxlanAndUp("fast_vxlan")
 	if err != nil {
 		logger.WithError(err).Error("failed to create vxlan and up")
 		return err
@@ -425,8 +425,8 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	_gw, _, _ := net.ParseCIDR(gwIP)
-	_, _podIP, _ := net.ParseCIDR(resp.Ip)
+	_gw, _, _ := net.ParseCIDR(fmt.Sprintf("%s/32", gwIP))
+	_, _podIP, _ := net.ParseCIDR(fmt.Sprintf("%s/32", resp.Ip))
 	result := &current.Result{
 		CNIVersion: pluginConfig.CNIVersion,
 		IPs: []*current.IPConfig{
