@@ -30,22 +30,25 @@ int cls_main(struct __sk_buff *skb) {
   struct endpointKey epKey = {};
   epKey.ip = dst_ip;
   struct endpointInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
+  // If the obtained IP address is the IP address of the local node
   if (ep) {
     bpf_memcpy(src_mac, ep->nodeMac, ETH_ALEN);
 	bpf_memcpy(dst_mac, ep->mac, ETH_ALEN);
     bpf_skb_store_bytes(skb, offsetof(struct ethhdr, h_source), dst_mac, ETH_ALEN, 0);
 	bpf_skb_store_bytes(skb, offsetof(struct ethhdr, h_dest), src_mac, ETH_ALEN, 0);
+	// It is directly redirected to the network adapter of the cluster container
     return bpf_redirect_peer(ep->lxcIfIndex, 0);
   }
   struct podNodeKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
   struct podNodeValue *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
+  // If it is the IP address of another node container
   if (podNode) {
     struct localNodeMapKey localKey = {};
     localKey.type = LOCAL_DEV_VXLAN;
     struct localNodeMapValue *localValue = bpf_map_lookup_elem(&local_dev, &localKey);
-    
     if (localValue) {
+      // Redirect to vxlan
       return bpf_redirect(localValue->ifIndex, 0);
     } 
     return TC_ACT_UNSPEC;
