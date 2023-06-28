@@ -12,14 +12,14 @@
 
 __section("classifier")
 int cls_main(struct __sk_buff *skb) {
-	void *data = (void *)(long)skb->data;
-	void *data_end = (void *)(long)skb->data_end;
-	if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end) {
+  void *data = (void *)(long)skb->data;
+  void *data_end = (void *)(long)skb->data_end;
+  if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end) {
     return TC_ACT_UNSPEC;
   }
 
-	struct ethhdr  *eth  = data;
-	struct iphdr   *ip   = (data + sizeof(struct ethhdr));
+  struct ethhdr  *eth  = data;
+  struct iphdr   *ip   = (data + sizeof(struct ethhdr));
   if (eth->h_proto != __constant_htons(ETH_P_IP)) {
 		return TC_ACT_UNSPEC;
   }
@@ -28,7 +28,7 @@ int cls_main(struct __sk_buff *skb) {
 	__u32 dst_ip = htonl(ip->daddr);
   struct podNodeKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
-  struct podNodeValue *podNode = bpf_map_lookup_elem(&ding_ip, &podNodeKey);
+  struct podNodeValue *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
   if (podNode) {
     __u32 dst_node_ip = podNode->ip;
     struct bpf_tunnel_key key;

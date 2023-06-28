@@ -21,12 +21,12 @@ struct localIpsMapInfo {
 };
 
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
+  __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct localIpsMapKey);
+  __type(key, struct localIpsMapKey);
   __type(value, struct localIpsMapInfo);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-} ding_lxc __section_maps_btf;
+} local_pod_ip __section_maps_btf;
 
 
 struct clusterIpsMapKey {
@@ -38,15 +38,15 @@ struct clusterIpsMapInfo {
 };
 
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
+  __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct clusterIpsMapKey);
+  __type(key, struct clusterIpsMapKey);
   __type(value, struct clusterIpsMapInfo);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-} ding_ip __section_maps_btf;
+} cluster_pod_ip __section_maps_btf;
 
 struct localDevMapKey {
-	__u32 type;
+  __u32 type;
 };
 
 struct localDevMapValue {
@@ -54,10 +54,10 @@ struct localDevMapValue {
 };
 
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
+  __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 255);
-	__type(key, struct localDevMapKey);
+  __type(key, struct localDevMapKey);
   __type(value, struct localDevMapValue);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-} ding_local __section_maps_btf;
+} local_dev __section_maps_btf;
 
