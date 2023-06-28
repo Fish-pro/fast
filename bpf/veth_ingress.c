@@ -27,9 +27,9 @@ int cls_main(struct __sk_buff *skb) {
   __u32 dst_ip = htonl(ip->daddr);
   __u8 src_mac[ETH_ALEN];
   __u8 dst_mac[ETH_ALEN];
-  struct endpointKey epKey = {};
+  struct localIpsMapKey epKey = {};
   epKey.ip = dst_ip;
-  struct endpointInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
+  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
   // If the obtained IP address is the IP address of the local node
   if (ep) {
     bpf_memcpy(src_mac, ep->nodeMac, ETH_ALEN);
@@ -39,14 +39,14 @@ int cls_main(struct __sk_buff *skb) {
 	// It is directly redirected to the network adapter of the cluster container
     return bpf_redirect_peer(ep->lxcIfIndex, 0);
   }
-  struct podNodeKey podNodeKey = {};
+  struct clusterIpsMapKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
-  struct podNodeValue *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
+  struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
   // If it is the IP address of another node container
   if (podNode) {
-    struct localNodeMapKey localKey = {};
+    struct localDevMapKey localKey = {};
     localKey.type = LOCAL_DEV_VXLAN;
-    struct localNodeMapValue *localValue = bpf_map_lookup_elem(&local_dev, &localKey);
+    struct localDevMapValue *localValue = bpf_map_lookup_elem(&local_dev, &localKey);
     if (localValue) {
       // Redirect to vxlan
       return bpf_redirect(localValue->ifIndex, 0);

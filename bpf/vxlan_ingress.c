@@ -27,9 +27,9 @@ int cls_main(struct __sk_buff *skb) {
   bpf_printk("the dst_ip is: %d", dst_ip);
   bpf_printk("the ip->daddr is: %d", ip->daddr);
 
-  struct endpointKey epKey = {};
+  struct localIpsMapKey epKey = {};
   epKey.ip = dst_ip;
-  struct endpointInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
+  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
   if (!ep) {
     return TC_ACT_OK;
   }
