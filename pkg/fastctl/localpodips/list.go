@@ -16,13 +16,13 @@ import (
 type listOptions struct {
 	genericclioptions.IOStreams
 
-	localPodIpsMap *ebpf.Map
+	localIpsMap *ebpf.Map
 }
 
 func newListOptions(ioStream genericclioptions.IOStreams) *listOptions {
 	return &listOptions{
-		IOStreams:      ioStream,
-		localPodIpsMap: bpfmap.GetLocalPodIpsMap(),
+		IOStreams:   ioStream,
+		localIpsMap: bpfmap.GetLocalPodIpsMap(),
 	}
 }
 
@@ -48,6 +48,9 @@ func (o *listOptions) Complete(cmd *cobra.Command, args []string) error {
 }
 
 func (o *listOptions) Validate(args []string) error {
+	if o.localIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 
@@ -60,7 +63,7 @@ func (o *listOptions) Run() error {
 	table := uitable.New()
 	table.MaxColWidth = 80
 	table.AddRow("LOCALIP", "MAC", "NODEMAC", "IFINDEX", "LXCIFINDEX")
-	iter := o.localPodIpsMap.Iterate()
+	iter := o.localIpsMap.Iterate()
 	for iter.Next(&key, &value) {
 		table.AddRow(util.InetUint32ToIp(key.IP), value.MAC, value.NodeMAC, value.IfIndex, value.LxcIfIndex)
 	}

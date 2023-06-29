@@ -201,6 +201,9 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	podIp := util.InetIpToUInt32(pod.Status.PodIP)
 	nodeIP := util.InetIpToUInt32(pod.Status.HostIP)
 	clusterIpsMap := bpfmap.GetClusterPodIpsMap()
+	if clusterIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 
 	if !pod.DeletionTimestamp.IsZero() {
 		return clusterIpsMap.Delete(bpfmap.ClusterIpsMapKey{IP: podIp})

@@ -3,6 +3,7 @@ package clusterpodips
 import (
 	"fmt"
 
+	"github.com/cilium/ebpf"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -14,13 +15,16 @@ import (
 type setOptions struct {
 	genericclioptions.IOStreams
 
+	clusterIpsMap *ebpf.Map
+
 	podIP  string
 	nodeIP string
 }
 
 func newSetOptions(ioStream genericclioptions.IOStreams) *setOptions {
 	return &setOptions{
-		IOStreams: ioStream,
+		IOStreams:     ioStream,
+		clusterIpsMap: bpfmap.GetClusterPodIpsMap(),
 	}
 }
 
@@ -55,15 +59,17 @@ func (o *setOptions) Validate(args []string) error {
 	if len(o.nodeIP) == 0 {
 		return fmt.Errorf("node-ip is required")
 	}
+	if o.clusterIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 
 func (o *setOptions) Run() error {
-	clusterIpsMap := bpfmap.GetClusterPodIpsMap()
 	podIP := util.InetIpToUInt32(o.podIP)
 	nodeIP := util.InetIpToUInt32(o.nodeIP)
 
-	if err := clusterIpsMap.Put(
+	if err := o.clusterIpsMap.Put(
 		bpfmap.ClusterIpsMapKey{IP: podIP},
 		bpfmap.ClusterIpsMapInfo{IP: nodeIP},
 	); err != nil {
