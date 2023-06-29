@@ -1,23 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx1
+  name: busybox1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nginx1
+      app: busybox1
   template:
     metadata:
       annotations:
         fast.io/ips: sample-ips
       labels:
-        app: nginx1
+        app: busybox1
     spec:
       containers:
-        - name: nginx1
-          image: nginx:stable
+        - name: busybox1
+          image: busybox:latest
           imagePullPolicy: IfNotPresent
+          command:
+            - sleep
+            - "10000"
           ports:
             - name: http
               containerPort: 80
@@ -26,23 +29,24 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
-  annotations:
-    fast.io/ips: sample-ips
+  name: busybox
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nginx
+      app: busybox
   template:
     metadata:
       labels:
-        app: nginx
+        app: busybox
     spec:
       containers:
-        - name: nginx
-          image: nginx:stable
+        - name: busybox
+          image: busybox:latest
           imagePullPolicy: IfNotPresent
+          command:
+            - sleep
+            - "10000"
           ports:
             - name: http
               containerPort: 80

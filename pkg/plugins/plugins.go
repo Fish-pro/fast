@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	VethHostName = "veth_host"
-	VethNetName  = "veth_net"
+	VethHostName = "fast_host"
+	VethNetName  = "fast_net"
 )
 
 var logger *logrus.Logger
