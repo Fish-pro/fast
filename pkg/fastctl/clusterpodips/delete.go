@@ -3,6 +3,7 @@ package clusterpodips
 import (
 	"fmt"
 
+	"github.com/cilium/ebpf"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -14,12 +15,15 @@ import (
 type deleteOptions struct {
 	genericclioptions.IOStreams
 
+	clusterIpsMap *ebpf.Map
+
 	podIP string
 }
 
 func newDeleteOptions(ioStream genericclioptions.IOStreams) *deleteOptions {
 	return &deleteOptions{
-		IOStreams: ioStream,
+		IOStreams:     ioStream,
+		clusterIpsMap: bpfmap.GetClusterPodIpsMap(),
 	}
 }
 
@@ -50,14 +54,16 @@ func (o *deleteOptions) Validate(args []string) error {
 	if len(o.podIP) == 0 {
 		return fmt.Errorf("pod-ip is required")
 	}
+	if o.clusterIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 
 func (o *deleteOptions) Run() error {
-	clusterIpsMap := bpfmap.GetClusterPodIpsMap()
 	podIP := util.InetIpToUInt32(o.podIP)
 
-	if err := clusterIpsMap.Delete(podIP); err != nil {
+	if err := o.clusterIpsMap.Delete(podIP); err != nil {
 		return fmt.Errorf("failed to delete pod ip %s from map: %w", o.podIP, err)
 	}
 	fmt.Fprintf(o.Out, "delete pod ip %s from map successfully\n", o.podIP)

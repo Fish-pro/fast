@@ -16,13 +16,13 @@ import (
 type listOptions struct {
 	genericclioptions.IOStreams
 
-	clusterPodIpsMap *ebpf.Map
+	clusterIpsMap *ebpf.Map
 }
 
 func newListOptions(ioStream genericclioptions.IOStreams) *listOptions {
 	return &listOptions{
-		IOStreams:        ioStream,
-		clusterPodIpsMap: bpfmap.GetClusterPodIpsMap(),
+		IOStreams:     ioStream,
+		clusterIpsMap: bpfmap.GetClusterPodIpsMap(),
 	}
 }
 
@@ -48,6 +48,9 @@ func (o *listOptions) Complete(cmd *cobra.Command, args []string) error {
 }
 
 func (o *listOptions) Validate(args []string) error {
+	if o.clusterIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 
@@ -60,7 +63,7 @@ func (o *listOptions) Run() error {
 	table := uitable.New()
 	table.MaxColWidth = 80
 	table.AddRow("CLUSTERIP", "VALUE")
-	iter := o.clusterPodIpsMap.Iterate()
+	iter := o.clusterIpsMap.Iterate()
 	for iter.Next(&key, &value) {
 		table.AddRow(util.InetUint32ToIp(key.IP), util.InetUint32ToIp(value.IP))
 	}

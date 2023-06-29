@@ -195,20 +195,19 @@ func setVethPairInfoToLocalIPsMap(hostNs ns.NetNS, podIP string, hostVeth, nsVet
 	}
 
 	localIpsMap := bpfmap.GetLocalPodIpsMap()
-	bpfKey := bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(podIP)}
-	bpfValue := bpfmap.LocalIpsMapInfo{
-		IfIndex:    uint32(nsVeth.Attrs().Index),
-		LxcIfIndex: uint32(hostVeth.Attrs().Index),
-		MAC:        util.Stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr)),
-		NodeMAC:    util.Stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr)),
+	if localIpsMap == nil {
+		logger.WithError(err).Error("failed load eBPF map")
+		return err
 	}
 
-	logger.WithFields(logrus.Fields{
-		"key":   bpfKey,
-		"value": bpfValue,
-	}).Info("set local pod ips to local_pod_ips eBPF map")
-
-	if err := localIpsMap.Put(bpfKey, bpfValue); err != nil {
+	if err := localIpsMap.Put(
+		bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(podIP)},
+		bpfmap.LocalIpsMapInfo{
+			IfIndex:    uint32(nsVeth.Attrs().Index),
+			LxcIfIndex: uint32(hostVeth.Attrs().Index),
+			MAC:        util.Stuff8Byte(([]byte)(nsVeth.Attrs().HardwareAddr)),
+			NodeMAC:    util.Stuff8Byte(([]byte)(hostVeth.Attrs().HardwareAddr)),
+		}); err != nil {
 		logger.WithError(err).Error("failed set local pod ips to local_pod_ips eBPF map")
 		return err
 	}
@@ -222,16 +221,11 @@ func attachTcBPFIntoVeth(veth *netlink.Veth) error {
 }
 
 func setVxlanInfoToLocalDevMap(vxlan *netlink.Vxlan) error {
-	bpfMap := bpfmap.GetLocalDevMap()
-	bpfKey := bpfmap.LocalDevMapKey{Type: bpfmap.VxlanDevType}
-	bpfValue := bpfmap.LocalDevMapValue{IfIndex: uint32(vxlan.Attrs().Index)}
-
-	logger.WithFields(logrus.Fields{
-		"key":   bpfKey,
-		"value": bpfValue,
-	}).Info("set NIC to local_dev eBPF map")
-
-	return bpfMap.Put(bpfKey, bpfValue)
+	localDevMap := bpfmap.GetLocalDevMap()
+	if localDevMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
+	return localDevMap.Put(bpfmap.LocalDevMapKey{Type: bpfmap.VxlanDevType}, bpfmap.LocalDevMapValue{IfIndex: uint32(vxlan.Attrs().Index)})
 }
 
 func attachTcBPFIntoVxlan(vxlan *netlink.Vxlan) error {

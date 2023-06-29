@@ -47,6 +47,9 @@ func (o *listOptions) Complete(cmd *cobra.Command, args []string) error {
 }
 
 func (o *listOptions) Validate(args []string) error {
+	if o.localDevMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 

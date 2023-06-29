@@ -3,6 +3,7 @@ package localpodips
 import (
 	"fmt"
 
+	"github.com/cilium/ebpf"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -14,6 +15,8 @@ import (
 type setOptions struct {
 	genericclioptions.IOStreams
 
+	localIpsMap *ebpf.Map
+
 	podIP     string
 	nsIndex   int
 	nsMac     string
@@ -23,7 +26,8 @@ type setOptions struct {
 
 func newSetOptions(ioStream genericclioptions.IOStreams) *setOptions {
 	return &setOptions{
-		IOStreams: ioStream,
+		IOStreams:   ioStream,
+		localIpsMap: bpfmap.GetLocalPodIpsMap(),
 	}
 }
 
@@ -58,20 +62,21 @@ func (o *setOptions) Validate(args []string) error {
 	if len(o.podIP) == 0 {
 		return fmt.Errorf("pod-ip is required")
 	}
+	if o.localIpsMap == nil {
+		return fmt.Errorf("failed to load eBPF map")
+	}
 	return nil
 }
 
 func (o *setOptions) Run() error {
-	localIpsMap := bpfmap.GetLocalPodIpsMap()
-	bpfKey := bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(o.podIP)}
-	bpfValue := bpfmap.LocalIpsMapInfo{
-		IfIndex:    uint32(o.nsIndex),
-		LxcIfIndex: uint32(o.hostIndex),
-		MAC:        util.Stuff8Byte([]byte(o.nsMac)),
-		NodeMAC:    util.Stuff8Byte([]byte(o.hostMac)),
-	}
-
-	if err := localIpsMap.Put(bpfKey, bpfValue); err != nil {
+	if err := o.localIpsMap.Put(
+		bpfmap.LocalIpsMapKey{IP: util.InetIpToUInt32(o.podIP)},
+		bpfmap.LocalIpsMapInfo{
+			IfIndex:    uint32(o.nsIndex),
+			LxcIfIndex: uint32(o.hostIndex),
+			MAC:        util.Stuff8Byte([]byte(o.nsMac)),
+			NodeMAC:    util.Stuff8Byte([]byte(o.hostMac)),
+		}); err != nil {
 		return fmt.Errorf("failed to set local pod ip %s to map: %w", o.podIP, err)
 	}
 
