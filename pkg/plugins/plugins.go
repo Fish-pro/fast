@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	VethHostName = "veth_host"
-	VethNetName  = "veth_net"
+	VethHostName = "fast_host"
+	VethNetName  = "fast_net"
 )
 
 var logger *logrus.Logger
@@ -425,14 +425,13 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	_gw, _, _ := net.ParseCIDR(fmt.Sprintf("%s/32", gwIP))
-	_, _podIP, _ := net.ParseCIDR(fmt.Sprintf("%s/32", resp.Ip))
+	_, podIP, _ := net.ParseCIDR(fmt.Sprintf("%s/32", resp.Ip))
 	result := &current.Result{
 		CNIVersion: pluginConfig.CNIVersion,
 		IPs: []*current.IPConfig{
 			{
-				Address: *_podIP,
-				Gateway: _gw,
+				Address: *podIP,
+				Gateway: net.ParseIP(gwIP),
 			},
 		},
 	}
