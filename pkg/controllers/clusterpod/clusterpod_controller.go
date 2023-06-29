@@ -198,25 +198,37 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	if len(pod.Status.PodIP) == 0 {
 		return nil
 	}
+
 	podIp := util.InetIpToUInt32(pod.Status.PodIP)
 	nodeIP := util.InetIpToUInt32(pod.Status.HostIP)
-	clusterIpsMap := bpfmap.GetClusterPodIpsMap()
-	if clusterIpsMap == nil {
-		return fmt.Errorf("failed to load eBPF map")
-	}
+	if types.NodeName(pod.Spec.NodeName) == c.nodeName {
+		if pod.DeletionTimestamp.IsZero() {
+			return nil
+		}
 
-	if !pod.DeletionTimestamp.IsZero() {
-		return clusterIpsMap.Delete(bpfmap.ClusterIpsMapKey{IP: podIp})
-	}
+		localIpsMap := bpfmap.GetLocalPodIpsMap()
+		if localIpsMap == nil {
+			return fmt.Errorf("failed to load eBPF map")
+		}
+		return localIpsMap.Delete(bpfmap.LocalIpsMapKey{IP: podIp})
+	} else {
+		clusterIpsMap := bpfmap.GetClusterPodIpsMap()
+		if clusterIpsMap == nil {
+			return fmt.Errorf("failed to load eBPF map")
+		}
 
-	return clusterIpsMap.Put(bpfmap.ClusterIpsMapKey{IP: podIp}, bpfmap.ClusterIpsMapInfo{IP: nodeIP})
+		if !pod.DeletionTimestamp.IsZero() {
+			return clusterIpsMap.Delete(bpfmap.ClusterIpsMapKey{IP: podIp})
+		}
+		return clusterIpsMap.Put(bpfmap.ClusterIpsMapKey{IP: podIp}, bpfmap.ClusterIpsMapInfo{IP: nodeIP})
+	}
 }
 
 // If nodeName is used, it is not queued if there is no match
 func (c *Controller) enqueue(logger klog.Logger, obj interface{}) {
 	pod := obj.(*v1.Pod)
-	if len(pod.Spec.NodeName) != 0 && pod.Spec.NodeName != string(c.nodeName) {
-		logger.V(10).Info("Access nodeName not match node", "pod", pod.Name, "node", c.nodeName)
+	if len(pod.Spec.NodeName) == 0 {
+		logger.V(10).Info("pod not scheduled, skip it")
 		return
 	}
 
