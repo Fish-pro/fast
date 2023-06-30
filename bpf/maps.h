@@ -27,7 +27,7 @@ struct {
   __type(key, struct localIpsMapKey);
   __type(value, struct localIpsMapInfo);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-} local_pod_ip __section_maps_btf;
+} local_pod_ips __section_maps_btf;
 
 
 struct clusterIpsMapKey {
@@ -45,7 +45,7 @@ struct {
   __type(key, struct clusterIpsMapKey);
   __type(value, struct clusterIpsMapInfo);
   __uint(pinning, LIBBPF_PIN_BY_NAME);
-} cluster_pod_ip __section_maps_btf;
+} cluster_pod_ips __section_maps_btf;
 
 struct localDevMapKey {
   __u32 type;

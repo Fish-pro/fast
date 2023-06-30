@@ -65,7 +65,7 @@ func (o *listOptions) Run() error {
 	table.AddRow("LOCALIP", "MAC", "NODEMAC", "IFINDEX", "LXCIFINDEX")
 	iter := o.localIpsMap.Iterate()
 	for iter.Next(&key, &value) {
-		table.AddRow(util.InetUint32ToIp(key.IP), value.MAC, value.NodeMAC, value.IfIndex, value.LxcIfIndex)
+		table.AddRow(util.InetUint32ToIp(key.IP), util.Bytes2MacStr(value.MAC), util.Bytes2MacStr(value.NodeMAC), value.IfIndex, value.LxcIfIndex)
 	}
 	fmt.Println(table)
 	return nil
