@@ -26,6 +26,8 @@ int cls_main(struct __sk_buff *skb) {
 
   __u32 src_ip = htonl(ip->saddr);
   __u32 dst_ip = htonl(ip->daddr);
+  bpf_printk("the dst_ip is: %d", dst_ip);
+  bpf_printk("the ip->daddr is: %d", ip->daddr);
   struct clusterIpsMapKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
   struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ips, &podNodeKey);
