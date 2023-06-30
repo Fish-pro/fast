@@ -1,7 +1,7 @@
 apiVersion: sample.fast.io/v1alpha1
 kind: Ips
 metadata:
-  name: default-ips
+  name: sample-ips
 spec:
   subnet: 10.244.0.1/32
   ips:
@@ -10,7 +10,7 @@ spec:
 apiVersion: sample.fast.io/v1alpha1
 kind: Ips
 metadata:
-  name: sample-ips
+  name: default-ips
 spec:
   subnet: 10.244.0.1/32
   ips:
