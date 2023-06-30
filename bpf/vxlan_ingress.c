@@ -29,7 +29,7 @@ int cls_main(struct __sk_buff *skb) {
 
   struct localIpsMapKey epKey = {};
   epKey.ip = dst_ip;
-  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
+  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ips, &epKey);
   if (!ep) {
     return TC_ACT_OK;
   }

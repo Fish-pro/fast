@@ -28,7 +28,7 @@ int cls_main(struct __sk_buff *skb) {
   __u32 dst_ip = htonl(ip->daddr);
   struct clusterIpsMapKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
-  struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
+  struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ips, &podNodeKey);
   if (podNode) {
     __u32 dst_node_ip = podNode->ip;
     struct bpf_tunnel_key key;

@@ -29,7 +29,7 @@ int cls_main(struct __sk_buff *skb) {
   __u8 dst_mac[ETH_ALEN];
   struct localIpsMapKey epKey = {};
   epKey.ip = dst_ip;
-  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ip, &epKey);
+  struct localIpsMapInfo *ep = bpf_map_lookup_elem(&local_pod_ips, &epKey);
   // If the obtained IP address is the IP address of the local node
   if (ep) {
     bpf_memcpy(src_mac, ep->nodeMac, ETH_ALEN);
@@ -41,7 +41,7 @@ int cls_main(struct __sk_buff *skb) {
   }
   struct clusterIpsMapKey podNodeKey = {};
   podNodeKey.ip = dst_ip;
-  struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ip, &podNodeKey);
+  struct clusterIpsMapInfo *podNode = bpf_map_lookup_elem(&cluster_pod_ips, &podNodeKey);
   // If it is the IP address of another node container
   if (podNode) {
     struct localDevMapKey localKey = {};
