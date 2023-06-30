@@ -11,6 +11,7 @@ import (
 	"github.com/fast-io/fast/pkg/fastctl/clusterpodips"
 	"github.com/fast-io/fast/pkg/fastctl/localdev"
 	"github.com/fast-io/fast/pkg/fastctl/localpodips"
+	"github.com/fast-io/fast/pkg/fastctl/version"
 )
 
 func NewFastCtlCommand(rootCmd string) *cobra.Command {
@@ -34,6 +35,7 @@ func NewFastCtlCommand(rootCmd string) *cobra.Command {
 		},
 	}
 	groups.Add(cmd)
+	cmd.AddCommand(version.NewCmdVersion(rootCmd))
 	templates.ActsAsRootCommand(cmd, []string{"options"}, groups...)
 
 	return cmd
