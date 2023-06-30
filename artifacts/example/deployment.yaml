@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: busybox1
+  name: busybox
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: busybox1
+      app: busybox
   template:
     metadata:
       annotations:
         fast.io/ips: sample-ips
       labels:
-        app: busybox1
+        app: busybox
     spec:
       containers:
-        - name: busybox1
+        - name: busybox
           image: busybox:latest
           imagePullPolicy: IfNotPresent
           command:
@@ -29,19 +29,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: busybox
+  name: busybox1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: busybox
+      app: busybox1
   template:
     metadata:
       labels:
-        app: busybox
+        app: busybox1
     spec:
       containers:
-        - name: busybox
+        - name: busybox1
           image: busybox:latest
           imagePullPolicy: IfNotPresent
           command:
