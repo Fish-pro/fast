@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
-	ipamapiv1 "github.com/fast-io/fast/api/proto/v1"
+	ipamapiv1 "github.com/fast-io/fast/pkg/api/proto/v1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
 	"github.com/fast-io/fast/pkg/ipsmanager"
 	"github.com/fast-io/fast/pkg/util"
