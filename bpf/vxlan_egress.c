@@ -42,6 +42,7 @@ int cls_main(struct __sk_buff *skb) {
     key.tunnel_ttl = 64;
     ret = bpf_skb_set_tunnel_key(skb, &key, sizeof(key), BPF_F_ZERO_CSUM_TX);
     if (ret < 0) {
+      // cat /sys/kernel/debug/tracing/trace_pipe
       bpf_printk("bpf_skb_set_tunnel_key failed");
       return TC_ACT_SHOT;
     }
