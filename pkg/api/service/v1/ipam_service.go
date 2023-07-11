@@ -7,10 +7,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
+	"k8s.io/client-go/kubernetes"
 
 	ipamapiv1 "github.com/fast-io/fast/pkg/api/proto/v1"
 	ipsversioned "github.com/fast-io/fast/pkg/generated/clientset/versioned"
@@ -19,11 +16,9 @@ import (
 )
 
 type IPAMService struct {
-	client ipsversioned.Interface
-	logger *zap.Logger
-
-	podLister corelisters.PodLister
-	podSynced cache.InformerSynced
+	client     ipsversioned.Interface
+	kubeClient kubernetes.Interface
+	logger     *zap.Logger
 
 	ipsManager ipsmanager.IpsManager
 
@@ -32,25 +27,15 @@ type IPAMService struct {
 
 func NewIPAMService(
 	ctx context.Context,
+	kubeClient kubernetes.Interface,
 	client ipsversioned.Interface,
-	podInformer coreinformers.PodInformer,
 	logger *zap.Logger) ipamapiv1.IpServiceServer {
-	ipamSvc := &IPAMService{
+	return &IPAMService{
 		client:     client,
+		kubeClient: kubeClient,
 		logger:     logger,
-		podLister:  podInformer.Lister(),
-		podSynced:  podInformer.Informer().HasSynced,
 		ipsManager: ipsmanager.NewIpsManager(client),
 	}
-
-	go func(ctx context.Context) {
-		if !cache.WaitForCacheSync(ctx.Done(), ipamSvc.podSynced) {
-			klog.Error(fmt.Errorf("failed to sync informer"), "sync informer error")
-			return
-		}
-	}(ctx)
-
-	return ipamSvc
 }
 
 func (s *IPAMService) Health(context.Context, *ipamapiv1.HealthRequest) (*ipamapiv1.HealthResponse, error) {
@@ -63,7 +48,7 @@ func (s *IPAMService) Allocate(ctx context.Context, req *ipamapiv1.AllocateReque
 	}
 	s.logger.Info("allocate ip", zap.String("namespace", req.Namespace), zap.String("name", req.Name))
 
-	pod, err := s.podLister.Pods(req.Namespace).Get(req.Name)
+	pod, err := s.kubeClient.CoreV1().Pods(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil {
 		s.logger.Error("get pod from lister error", zap.Error(err))
 		return nil, err

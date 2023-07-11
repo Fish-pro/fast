@@ -132,7 +132,7 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	// 2.Obtain the cluster pod IP and store the information to the cluster eBPF map
 	controller, err := clusterpodctrl.NewController(
 		ctx,
-		c.Client,
+		clientBuilder.ClientOrDie("fast-agent"),
 		kubeInformerFactory.Core().V1().Pods(),
 	)
 	if err != nil {
@@ -151,8 +151,8 @@ func Run(ctx context.Context, c *config.CompletedConfig) error {
 	}
 	ipamSvc := ipamservicev1.NewIPAMService(
 		ctx,
+		clientBuilder.ClientOrDie("fast-agent"),
 		clientBuilder.IpsClientOrDie("fast-agent"),
-		kubeInformerFactory.Core().V1().Pods(),
 		grpclogger.Log,
 	)
 	ipamapiv1.RegisterIpServiceServer(server, ipamSvc)
