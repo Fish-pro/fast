@@ -41,7 +41,7 @@ In overlay scenario, fix the IP address of cluster containers
    metadata:
      name: sample-ips
    spec:
-     subnet: 10.244.0.1/32
+     subnet: 10.244.0.1/16
      ips:
        - 10.244.10.0-10.244.90.0
    EOF
@@ -103,7 +103,7 @@ In overlay scenario, fix the IP address of cluster containers
    metadata:
      name: default-ips
    spec:
-     subnet: 10.244.0.1/32
+     subnet: 10.244.0.1/16
      ips:
        - 10.244.100.0-10.244.200.250
    ---
